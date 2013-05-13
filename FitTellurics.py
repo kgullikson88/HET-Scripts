@@ -84,6 +84,12 @@ if __name__ == "__main__":
                       "o2": [5e4, 1e6],
                       "resolution": [resolution/2.0, resolution*2.0]})
     models = []
+    
+    #Make a test model, to determine whether/how to fit each value
+    fitter.AdjustValue({"wavestart": orders[0].x[0]-20,
+                        "waveend": orders[-1].x[-1]+20})
+    fitpars = [fitter.const_pars[j] for j in range(len(fitter.parnames)) if fitter.fitting[j] ]
+    test_model = fitter.GenerateModel(fitpars, LineList, nofit=True)
 
     #START LOOPING OVER ORDERS
     start = 0
@@ -98,9 +104,12 @@ if __name__ == "__main__":
       fitter.ImportData(order)
 
       #Determine how to fit the data from the initial model guess
-      fitpars = [fitter.const_pars[j] for j in range(len(fitter.parnames)) if fitter.fitting[j] ]
-      model = fitter.GenerateModel(fitpars, LineList)
-      fitter.ImportData(order) #Re-initialize to original data before fitting
+      #fitpars = [fitter.const_pars[j] for j in range(len(fitter.parnames)) if fitter.fitting[j] ]
+      #model = fitter.GenerateModel(fitpars, LineList)
+      #fitter.ImportData(order) #Re-initialize to original data before fitting
+      left = numpy.searchsorted(test_model.x, order.x[0])
+      right = numpy.searchsorted(test_model.x, order.x[-1])
+      model = DataStructures.xypoint(x=test_model.x[left:right], y=test_model.y[left:right])
       model_amplitude = 1.0 - min(model.y)
       if model_amplitude < 0.01 or i+start > 29:
         print "Skipping order %i" %(i+start)
@@ -155,6 +164,6 @@ if __name__ == "__main__":
       
       
       if i == 0:
-        FitsUtils.OutputFitsFileExtensions(columns, fname, outfilename, header_info=header_info)
+        FitsUtils.OutputFitsFileExtensions(columns, fname, outfilename, header_info=header_info, mode="new")
       else:
-        FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, header_info=header_info)
+        FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, header_info=header_info, mode="append")
