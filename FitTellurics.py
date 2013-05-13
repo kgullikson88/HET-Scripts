@@ -91,12 +91,7 @@ if __name__ == "__main__":
                         "waveend": orders[-1].x[-1]+20})
     fitpars = [fitter.const_pars[j] for j in range(len(fitter.parnames)) if fitter.fitting[j] ]
     test_model = fitter.GenerateModel(fitpars, LineList, nofit=True)
-    plt.plot(test_model.x, test_model.y, 'r-')
-    for order in orders:
-      order.cont = FindContinuum.Continuum(order.x, order.y, fitorder=3, lowreject=2, highreject=10)
-      plt.plot(order.x, order.y/order.cont, 'k-')
-    plt.show()
-    sys.exit()
+    
 
     #START LOOPING OVER ORDERS
     start = 0
