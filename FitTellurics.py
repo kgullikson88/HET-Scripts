@@ -26,6 +26,7 @@ if __name__ == "__main__":
 
   #START LOOPING OVER INPUT FILES
   for fname in sys.argv[1:]:
+    logfile.write("Fitting file %s\n" %(fname))
     num = fname[3:].split(".fits")[0]
     outfilename = "Corrected_%s.fits" %num
 
@@ -90,6 +91,12 @@ if __name__ == "__main__":
                         "waveend": orders[-1].x[-1]+20})
     fitpars = [fitter.const_pars[j] for j in range(len(fitter.parnames)) if fitter.fitting[j] ]
     test_model = fitter.GenerateModel(fitpars, LineList, nofit=True)
+    plt.plot(test_model.x, test_model.y, 'r-')
+    for order in orders:
+      order.cont = FindContinuum.Continuum(order.x, order.y, fitorder=3, lowreject=2, highreject=10)
+      plt.plot(order.x, order.y/order.cont, 'k-')
+    plt.show()
+    sys.exit()
 
     #START LOOPING OVER ORDERS
     start = 0
@@ -111,22 +118,27 @@ if __name__ == "__main__":
       right = numpy.searchsorted(test_model.x, order.x[-1])
       model = DataStructures.xypoint(x=test_model.x[left:right], y=test_model.y[left:right])
       model_amplitude = 1.0 - min(model.y)
-      if model_amplitude < 0.01 or i+start > 29:
+      if model_amplitude < 0.01:
+        logfile.write("Skipping order %i\n" %(i+start))
         print "Skipping order %i" %(i+start)
         data = order.copy()
-        #model = DataStructures.xypoint(x=order.x.copy(), y=numpy.ones(order.x.size))
+        model = DataStructures.xypoint(x=order.x.copy(), y=numpy.ones(order.x.size))
         primary = model.copy()
-      elif model_amplitude >= 0.01 and model_amplitude < 0.1:        
+      elif model_amplitude >= 0.01 and model_amplitude < 0.1:
+        logfile.write("Fitting order %i with guassian line profiles\n" %(i+start)) 
         print "Fitting line profiles with gaussian profile"
         model = fitter.Fit(resolution_fit_mode="gauss", fit_primary=False, adjust_wave="model")
         models.append(model)
         data = fitter.data
       else: 
+        logfile.write("Fitting order %i with SVD\n" %(i+start))
         print "Large model amplitude. Using SVD for line profiles"
         model = fitter.Fit(resolution_fit_mode="SVD", fit_primary=False, adjust_wave="model")
         models.append(model)
         data = fitter.data
-        
+
+      logfile.write("Array sizes: wave, flux, cont, error, model, primary\n")
+      logfile.write("%i\n%i\n%i\n%i\n%i\n\n\n" %(data.x.size, data.y.size, data.cont.size, data.err.size, model.y.size, primary.y.size))
       #Set up data structures for OutputFitsFile
       columns = {"wavelength": data.x,
 	         "flux": data.y,
@@ -167,3 +179,5 @@ if __name__ == "__main__":
         FitsUtils.OutputFitsFileExtensions(columns, fname, outfilename, header_info=header_info, mode="new")
       else:
         FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, header_info=header_info, mode="append")
+
+  logfile.close()
