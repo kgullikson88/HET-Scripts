@@ -133,7 +133,7 @@ if __name__ == "__main__":
         data = fitter.data
 
       logfile.write("Array sizes: wave, flux, cont, error, model, primary\n")
-      logfile.write("%i\n%i\n%i\n%i\n%i\n\n\n" %(data.x.size, data.y.size, data.cont.size, data.err.size, model.y.size, primary.y.size))
+      logfile.write("%i\n%i\n%i\n%i\n%i\n%i\n\n\n" %(data.x.size, data.y.size, data.cont.size, data.err.size, model.y.size, primary.y.size))
       #Set up data structures for OutputFitsFile
       columns = {"wavelength": data.x,
 	         "flux": data.y,

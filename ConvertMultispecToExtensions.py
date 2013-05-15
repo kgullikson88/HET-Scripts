@@ -2,6 +2,7 @@ import FitsUtils
 import FindContinuum
 import pyfits
 import sys
+import os
 import numpy
 import pylab
 
@@ -16,11 +17,17 @@ if __name__ == "__main__":
       fileList.append(arg)
   for fname in fileList:
     outfilename = "%s-0.fits" %(fname.split(".fits")[0])
+    header = pyfits.getheader(fname)
+    print header
     orders = FitsUtils.MakeXYpoints(fname)
     orders = orders[::-1]    #Reverse order so the bluest order is first
     if blazecorrect:
       header = pyfits.getheader(fname)
-      blazefile = "%s.fits" %header['BLAZE']
+      try:
+        blazefile = "%s.fits" %header['BLAZE']
+      except KeyError:
+        allfiles = os.listdir("./")
+        blazefile = [f for f in allfiles if "BLAZE" in f][0]
       try:
         blaze = FitsUtils.MakeXYpoints(blazefile)
         blaze = blaze[::-1]
@@ -31,17 +38,13 @@ if __name__ == "__main__":
     for i, order in enumerate(orders):
       #This data is weird. Some parts of the extracted spectra have 0 flux on the edges
       goodindices = numpy.where(order.y > 1e-4)[0]
+      if goodindices.size < 2:
+        continue
       left, right = goodindices[0], goodindices[-1]
-      #print left, right
-      #print order.y
-      #print order.y[left], order.y[right]
       
 
       #Blaze correction
       if blazecorrect:
-        #pylab.plot(order.x, order.y/order.y.mean())
-        #pylab.plot(order.x, blaze[i].y)
-        #pylab.show()
         order.y /= blaze[i].y
         order.err /= blaze[i].y
 
@@ -62,5 +65,4 @@ if __name__ == "__main__":
       else:
         FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, mode="append")
       
-      #pylab.plot(order.x, order.y)
-      #pylab.show()
+      

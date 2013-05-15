@@ -1,15 +1,72 @@
 import FitsUtils
 import numpy
 import sys
+import matplotlib.pyplot as plt
 
 trimming = {
            21: [0, 576.3],
            22: [582.6, 9e9],
            23: [583.45, 9e9],
            37: [0, 680.15]}
+
+
+class Trimmer:
+  def __init__(self, data):
+    self.data = data.copy()
+    self.clicks = []
+    
+  def InputData(self, data):
+    self.data = data.copy()
+    
+  def Plot(self):
+    self.fig =  plt.figure(1, figsize=(11,10))
+    cid = self.fig.canvas.mpl_connect('key_press_event', self.keypress)
+    plt.plot(self.data.x, self.data.y)
+    plt.plot(self.data.x, self.data.cont)
+    plt.show()
+    return self.data.copy()
+
+  def keypress(self, event):
+    if event.key == "r":
+      print "Set to remove points. Click on the bounds"
+      self.clipmode = "remove"
+      self.clickid = self.fig.canvas.mpl_connect('button_press_event', self.mouseclick)
+    elif event.key == "i":
+      print "Set to interpolate between points. Click the bounds"
+      self.clipmode = "interpolate"
+      self.clickid = self.fig.canvas.mpl_connect('button_press_event', self.mouseclick)
+    
+
+  def mouseclick(self, event):
+    self.clicks.append(event.xdata)
+
+    if len(self.clicks) == 2:
+      left = max(0, numpy.searchsorted(self.data.x, min(self.clicks)))
+      right = min(self.data.size()-1, numpy.searchsorted(self.data.x, max(self.clicks)))
+
+      if self.clipmode == "remove":
+        self.data.x = numpy.delete(self.data.x, numpy.arange(left,right+1))
+        self.data.y = numpy.delete(self.data.y, numpy.arange(left,right+1))
+        self.data.cont = numpy.delete(self.data.cont, numpy.arange(left,right+1))
+        self.data.err = numpy.delete(self.data.err, numpy.arange(left,right+1))
+      elif self.clipmode == "interpolate":
+        x1, x2 = self.data.x[left], self.data.x[right]
+        y1, y2 = self.data.y[left], self.data.y[right]
+        m = (y2 - y1) / (x2 - x1)
+        self.data.y[left:right] = m*(self.data.x[left:right] - x1) + y1
+        self.data.cont[left:right] = m*(self.data.x[left:right] - x1) + y1
+        
+      self.fig.clf()
+      cid = self.fig.canvas.mpl_connect('key_press_event', self.keypress)
+      plt.plot(self.data.x, self.data.y)
+      plt.plot(self.data.x, self.data.cont)
+      plt.draw()
+      
+      self.fig.canvas.mpl_disconnect(self.clickid)
+      self.clicks = []
            
 
-if __name__ == "__main__":
+def main1():
   for fname in sys.argv[1:]:
     if "-" in fname:
       num = int(fname.split("-")[-1].split(".fits")[0])
@@ -37,3 +94,28 @@ if __name__ == "__main__":
       else:
         FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, mode="append")
         
+
+
+
+if __name__ == "__main__":
+  for fname in sys.argv[1:]:
+    if "-" in fname:
+      num = int(fname.split("-")[-1].split(".fits")[0])
+      outfilename = "%s-%i.fits" %(fname.split("-")[0], num+1)
+    else:
+      outfilename = "%s-0.fits" %(fname.split(".fits")[0])
+    orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", errors="error", cont="continuum")
+    trim = Trimmer(orders[0])
+    for i, order in enumerate(orders):
+      trim.InputData(order)
+      order = trim.Plot()
+
+      columns = {"wavelength": order.x,
+	         "flux": order.y,
+                 "continuum": order.cont,
+                 "error": order.err}
+      
+      if i == 0:
+        FitsUtils.OutputFitsFileExtensions(columns, fname, outfilename, mode="new")
+      else:
+        FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, mode="append")
