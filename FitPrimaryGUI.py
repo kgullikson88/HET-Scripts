@@ -39,6 +39,7 @@ class LineFitter:
     command = subprocess.check_call(cmdstring, shell=True)
     
     self.fitmode = False
+    self.mode = "convolution"
     self.clicks = []
     self.template = infilename
     self.infilename = infilename
@@ -82,8 +83,18 @@ class LineFitter:
 
 
   def keypress(self, event):
+    if event.key == "S":
+      #Smooth by convolving with a kernel
+      print "Smoothing with henning window"
+      self.mode = "convolution"
+      self.window_size = 100
+      self.smoothing_data = self.current_order.copy()
+      smoothed = self.ConvolveSmooth()
+      self.fitaxis.cla()
+      self.PlotArrays(((self.smoothing_data.x, self.smoothing_data.y/self.smoothing_data.cont, "Data"), (smoothed.x, smoothed.y, "Smoothed")), self.fitaxis)
     if event.key == "f":
       #Enter fit mode
+      self.mode = "spline"
       if self.fitmode:
         print "Deactivating fit mode"
         self.fitmode = False
@@ -97,19 +108,33 @@ class LineFitter:
         self.clickid = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
         return
       
-    if self.fitmode and event.key == "-":
-      print "Decreasing smoothing factor: s = %g --> %g" %(self.smoothing_factor, self.smoothing_factor*1.1)
+    if ((self.fitmode and self.mode=="spline") or self.mode=="convolution") and event.key == "-":
+      
       #before = self.SmoothData()
-      self.smoothing_factor *= 1.1
-      smoothed = self.SmoothData()
+      print self.mode
+      if self.mode == "spline":
+        print "Decreasing smoothing factor: s = %g --> %g" %(self.smoothing_factor, self.smoothing_factor*1.1)
+        self.smoothing_factor *= 1.1
+        smoothed = self.SmoothData()
+      elif self.mode == "convolution":
+        print "Increasing window size: size = %i --> %i" %(self.window_size, self.window_size+5)
+        self.window_size += 5
+        smoothed = self.ConvolveSmooth()
       #print before.y - smoothed.y
       self.fitaxis.cla()
       self.PlotArrays(((self.smoothing_data.x, self.smoothing_data.y/self.smoothing_data.cont, "Data"), (smoothed.x, smoothed.y, "Smoothed")), self.fitaxis)
       
-    if self.fitmode and event.key == "+":
-      print "Increasing smoothing factor: s = %g --> %g" %(self.smoothing_factor, self.smoothing_factor*0.9)
-      self.smoothing_factor *= 0.9
-      smoothed = self.SmoothData()
+    if ((self.fitmode and self.mode=="spline") or self.mode=="convolution") and event.key == "+":
+      
+      print self.mode
+      if self.mode == "spline":
+        print "Increasing smoothing factor: s = %g --> %g" %(self.smoothing_factor, self.smoothing_factor*0.9)
+        self.smoothing_factor *= 0.9
+        smoothed = self.SmoothData()
+      elif self.mode == "convolution":
+        print "Decreasing window size: size = %i --> %i" %(self.window_size, self.window_size-5)
+        self.window_size -= 5
+        smoothed = self.ConvolveSmooth()
       self.fitaxis.cla()
       self.PlotArrays(((self.smoothing_data.x, self.smoothing_data.y/self.smoothing_data.cont, "Data"), (smoothed.x, smoothed.y, "Smoothed")), self.fitaxis)
 
@@ -125,9 +150,12 @@ class LineFitter:
           print "Woops! You entered something starting with s, but did not have the format s=0.001 (or some other number after the equals sign)"
           return
       
-    if self.fitmode and event.key == "q":
+    if ((self.fitmode and self.mode=="spline") or self.mode=="convolution") and event.key == "q":
       #Divide data by smoothed version
-      smoothed = self.SmoothData()
+      if self.mode == "spline":
+        smoothed = self.SmoothData()
+      elif self.mode == "convolution":
+        smoothed = self.ConvolveSmooth()
       self.smoothing_data.y /= smoothed.y
       left = numpy.searchsorted(self.current_order.x, self.smoothing_data.x[0])
       right = numpy.searchsorted(self.current_order.x, self.smoothing_data.x[-1])
@@ -199,6 +227,33 @@ class LineFitter:
         data.cont = numpy.delete(data.cont, badindices)
       
     return DataStructures.xypoint(x=self.smoothing_data.x, y=smoother(self.smoothing_data.x))
+    
+    
+  
+  def ConvolveSmooth(self, numiters=10, lowreject=2, highreject=2):
+    done = False
+    data = self.smoothing_data.copy()
+    data.y /= data.cont
+    iterations = 0
+    window = numpy.hanning(self.window_size)
+    
+    while not done and iterations < numiters:
+      iterations += 1
+      done = True
+      s = numpy.r_[data.y[self.window_size/2:0:-1], data.y, data.y[-1:-self.window_size/2:-1]]
+      y = numpy.convolve(window/window.sum(), s, mode='valid')
+      
+      reduced = data.y/y
+      sigma = numpy.std(reduced)
+      mean = numpy.mean(reduced)
+      badindices = numpy.where(numpy.logical_or((reduced - mean)/sigma < -lowreject, (reduced - mean)/sigma > highreject))[0]
+      if badindices.size > 0:
+        done = False
+        data.y[badindices] = y[badindices]
+    
+    return DataStructures.xypoint(x=self.smoothing_data.x, y=y)
+        
+  
 
   def PlotArrays(self, arrays, axis, legend=True):
     axis.cla()

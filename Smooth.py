@@ -5,7 +5,7 @@ import sys
 
 
 if __name__ == "__main__":
-  window_len = 50
+  window_len = 100
   numstd = 2.0
   numiters = 10
   for fname in sys.argv[1:]:
@@ -27,10 +27,14 @@ if __name__ == "__main__":
         sigma = numpy.std(reduced)
         mean = numpy.mean(reduced)
         badindices = numpy.where((reduced - mean)/sigma < -numstd)[0]
-        print badindices
+        #print badindices
+        #plt.plot((reduced - mean)/sigma)
+        #plt.plot(numpy.ones(reduced.size)*-numstd)
+        #plt.show()
+        #inp = raw_input("done")
         if badindices.size > 0:
           done = False
-          s[badindices] = y2[badindices]
+          order.y[badindices] = y2[badindices]
         
       #print order.x.size, y.size
       plt.plot(order.x, order.y, 'k-')
