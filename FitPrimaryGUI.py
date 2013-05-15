@@ -32,7 +32,7 @@ class LineFitter:
     #Make outfilename
     if "-" in infilename:
       num = int(infilename.split("-")[-1].split(".fits")[0])
-      outfilename = "%s-%i.fits" %(infilename.split("-")[-1], num+1)
+      outfilename = "%s-%i.fits" %(infilename.split("-")[0], num+1)
     else:
       outfilename = "%s-0.fits" %(infilename.split(".fits")[0])
     cmdstring = "cp %s %s" %(infilename, outfilename)
