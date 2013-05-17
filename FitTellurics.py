@@ -22,13 +22,21 @@ if __name__ == "__main__":
   fitter.SetTelluricLineListFile(linelist)
   LineList = numpy.loadtxt(linelist)
   logfile = open("fitlog.txt", "w")
-  
+ 
+  fileList = []
+  start = 0
+  for arg in sys.argv[1:]:
+    if "-start" in arg:
+      start = int(arg.split("=")[-1])
+    else:
+      fileList.append(arg)
+
 
   #START LOOPING OVER INPUT FILES
-  for fname in sys.argv[1:]:
+  for fname in fileList:
     logfile.write("Fitting file %s\n" %(fname))
-    num = fname[3:].split(".fits")[0]
-    outfilename = "Corrected_%s.fits" %num
+    name = fname.split(".fits")[0]
+    outfilename = "Corrected_%s.fits" %name
 
     orders = FitsUtils.MakeXYpoints(fname, errors="error", extensions=True, x="wavelength", y="flux")
     header = pyfits.getheader(fname)
@@ -94,7 +102,6 @@ if __name__ == "__main__":
     
 
     #START LOOPING OVER ORDERS
-    start = 0
     for i, order in enumerate(orders[start:]):
       print "\n***************************\nFitting order %i: " %(i+start)
       fitter.AdjustValue({"wavestart": order.x[0] - 20.0,
@@ -119,7 +126,7 @@ if __name__ == "__main__":
         data = order.copy()
         model = DataStructures.xypoint(x=order.x.copy(), y=numpy.ones(order.x.size))
         primary = model.copy()
-      elif model_amplitude >= 0.01 and model_amplitude < 0.1:
+      elif model_amplitude >= 0.01: # and model_amplitude < 0.1:
         logfile.write("Fitting order %i with guassian line profiles\n" %(i+start)) 
         print "Fitting line profiles with gaussian profile"
         model = fitter.Fit(resolution_fit_mode="gauss", fit_primary=False, adjust_wave="model")
