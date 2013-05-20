@@ -1,6 +1,8 @@
 import FitsUtils
 import numpy
 from scipy.interpolate import UnivariateSpline
+import matplotlib
+matplotlib.rcParams['axes.color_cycle'] = ['b', 'r', 'g']
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import DataStructures
@@ -14,12 +16,15 @@ import pyfits
 
 
 class LineFitter:
-  def __init__(self, infilename, telluricfile = "/Users/kgulliks/School/Research/aerlbl_v12.2/rundir2/OutputModels/transmission-792.30-290.93-45.0-7.4-368.50-4.00-10.00-1.50", telluric=False):
+  def __init__(self, infilename, telluricfile = "/Users/kgulliks/School/Research/aerlbl_v12.2/rundir2/OutputModels/transmission-792.30-290.93-45.0-7.4-368.50-4.00-10.00-1.50", telluric=False, default_windowsize=100):
 
     
     print "Reading data"
     self.orders = FitsUtils.MakeXYpoints(infilename, errors="error", extensions=True, x="wavelength", y="flux")      
 
+    for i, order in enumerate(self.orders):
+      self.orders[i].cont = FindContinuum.Continuum(order.x, order.y, lowreject=3, highreject=3, fitorder=2)
+    
     if telluric:
       print "Reading telluric model from database"
       x,y = numpy.loadtxt(telluricfile, unpack=True)
@@ -44,6 +49,7 @@ class LineFitter:
     self.template = infilename
     self.infilename = infilename
     self.outfilename = outfilename
+    self.default_windowsize = default_windowsize
 
   def Plot(self):
     start = 0
@@ -55,7 +61,6 @@ class LineFitter:
       self.mainaxis = plt.subplot(plotgrid[0])
       self.fitaxis = plt.subplot(plotgrid[1])
       cid = self.fig.canvas.mpl_connect('key_press_event', self.keypress)
-      #order.cont = FindContinuum.Continuum(order.x, order.y, fitorder=2)
       self.current_order = order.copy()
       left = numpy.searchsorted(self.model.x, order.x[0]-10.0)
       right = numpy.searchsorted(self.model.x, order.x[-1]+10.0)
@@ -87,7 +92,7 @@ class LineFitter:
       #Smooth by convolving with a kernel
       print "Smoothing with henning window"
       self.mode = "convolution"
-      self.window_size = 100
+      self.window_size = self.default_windowsize
       self.smoothing_data = self.current_order.copy()
       smoothed = self.ConvolveSmooth()
       self.fitaxis.cla()
@@ -156,6 +161,7 @@ class LineFitter:
         smoothed = self.SmoothData()
       elif self.mode == "convolution":
         smoothed = self.ConvolveSmooth()
+        smoothed.y *= self.current_order.cont/self.current_order.cont.mean()
       self.smoothing_data.y /= smoothed.y
       left = numpy.searchsorted(self.current_order.x, self.smoothing_data.x[0])
       right = numpy.searchsorted(self.current_order.x, self.smoothing_data.x[-1])
@@ -233,7 +239,7 @@ class LineFitter:
   def ConvolveSmooth(self, numiters=10, lowreject=2, highreject=2):
     done = False
     data = self.smoothing_data.copy()
-    data.y /= data.cont
+    #data.y /= data.cont
     iterations = 0
     window = numpy.hanning(self.window_size)
     
@@ -251,7 +257,7 @@ class LineFitter:
         done = False
         data.y[badindices] = y[badindices]
     
-    return DataStructures.xypoint(x=self.smoothing_data.x, y=y)
+    return DataStructures.xypoint(x=self.smoothing_data.x, y=y/self.smoothing_data.cont)
         
   
 
@@ -333,16 +339,19 @@ if __name__ == "__main__":
   #Parse command line arguments
   files = []
   telluric = False
+  windowsize = 100
   for arg in sys.argv[1:]:
     if "-t" in arg:
       telluric=True
+    elif '-size' in arg:
+      windowsize = int(arg.split("=")[-1])
     else:
       files.append(arg)
 
   #Loop over files
   for fname in files:
     if "linux" in sys.platform:
-      fitter = LineFitter(fname, telluricfile="/home/kgullikson/School/Research/aerlbl_v12.2/rundir3/OutputModels/transmission-796.23-270.40-27.1-40.8-368.50-3.90-1.80-1.40", telluric=telluric)
+      fitter = LineFitter(fname, telluricfile="/home/kgullikson/School/Research/aerlbl_v12.2/rundir3/OutputModels/transmission-796.23-270.40-27.1-40.8-368.50-3.90-1.80-1.40", telluric=telluric, default_windowsize = windowsize)
     else:
-      fitter = LineFitter(fname, telluric=telluric)
+      fitter = LineFitter(fname, telluric=telluric, default_windowsize = windowsize)
     fitter.Plot()
