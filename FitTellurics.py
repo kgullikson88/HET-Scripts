@@ -118,8 +118,13 @@ if __name__ == "__main__":
       #fitter.ImportData(order) #Re-initialize to original data before fitting
       left = numpy.searchsorted(test_model.x, order.x[0])
       right = numpy.searchsorted(test_model.x, order.x[-1])
+      print test_model.x
+      print order.x
+      print left, right
+      
       model = DataStructures.xypoint(x=test_model.x[left:right], y=test_model.y[left:right])
       model_amplitude = 1.0 - min(model.y)
+      print "Model amplitude: %g" %model_amplitude
       if model_amplitude < 0.01:
         logfile.write("Skipping order %i\n" %(i+start))
         print "Skipping order %i" %(i+start)
@@ -129,14 +134,22 @@ if __name__ == "__main__":
       elif model_amplitude >= 0.01: # and model_amplitude < 0.1:
         logfile.write("Fitting order %i with guassian line profiles\n" %(i+start)) 
         print "Fitting line profiles with gaussian profile"
-        model = fitter.Fit(resolution_fit_mode="gauss", fit_primary=False, adjust_wave="model")
-        models.append(model)
+	try:
+	  model = fitter.Fit(resolution_fit_mode="gauss", fit_primary=False, adjust_wave="model")
+	except ValueError:
+	  model = DataStructures.xypoint(x=order.x.copy(), y=numpy.ones(order.x.size))
+	
+	models.append(model)
         data = fitter.data
       else: 
         logfile.write("Fitting order %i with SVD\n" %(i+start))
         print "Large model amplitude. Using SVD for line profiles"
-        model = fitter.Fit(resolution_fit_mode="SVD", fit_primary=False, adjust_wave="model")
-        models.append(model)
+	try:
+          model = fitter.Fit(resolution_fit_mode="SVD", fit_primary=False, adjust_wave="model")
+	except ValueError:
+	  model = DataStructures.xypoint(x=order.x.copy(), y=numpy.ones(order.x.size))
+
+	models.append(model)
         data = fitter.data
 
       logfile.write("Array sizes: wave, flux, cont, error, model, primary\n")
