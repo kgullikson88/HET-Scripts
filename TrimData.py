@@ -11,9 +11,12 @@ trimming = {
 
 
 class Trimmer:
-  def __init__(self, data):
-    self.data = data.copy()
+  def __init__(self, data=None):
+    if data != None:
+      self.data = data.copy()
     self.clicks = []
+    logfile = open("trimlog.dat", "w")
+    logfile.close()
     
   def InputData(self, data):
     self.data = data.copy()
@@ -44,12 +47,16 @@ class Trimmer:
       left = max(0, numpy.searchsorted(self.data.x, min(self.clicks)))
       right = min(self.data.size()-1, numpy.searchsorted(self.data.x, max(self.clicks)))
 
+      
+      logfile = open("trimlog.dat", "a")
       if self.clipmode == "remove":
+        logfile.write("Removing:\t%.3f  to %.3f\n" %(min(self.clicks), max(self.clicks)))
         self.data.x = numpy.delete(self.data.x, numpy.arange(left,right+1))
         self.data.y = numpy.delete(self.data.y, numpy.arange(left,right+1))
         self.data.cont = numpy.delete(self.data.cont, numpy.arange(left,right+1))
         self.data.err = numpy.delete(self.data.err, numpy.arange(left,right+1))
       elif self.clipmode == "interpolate":
+        logfile.write("Interpolating:\t%.3f  to %.3f\n" %(min(self.clicks), max(self.clicks)))
         x1, x2 = self.data.x[left], self.data.x[right]
         y1, y2 = self.data.y[left], self.data.y[right]
         m = (y2 - y1) / (x2 - x1)
@@ -64,6 +71,7 @@ class Trimmer:
       
       self.fig.canvas.mpl_disconnect(self.clickid)
       self.clicks = []
+      logfile.close()
            
 
 def main1():
@@ -98,6 +106,7 @@ def main1():
 
 
 if __name__ == "__main__":
+  trim = Trimmer()
   for fname in sys.argv[1:]:
     if "-" in fname:
       num = int(fname.split("-")[-1].split(".fits")[0])
@@ -105,8 +114,18 @@ if __name__ == "__main__":
     else:
       outfilename = "%s-0.fits" %(fname.split(".fits")[0])
     orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", errors="error", cont="continuum")
-    trim = Trimmer(orders[0])
+    #trim = Trimmer(orders[0])
+    
+    logfile = open("trimlog.dat", "a")
+    logfile.write("\n\n\n******************************************\n")
+    logfile.write("\nTrimming file %s\n\n" %(fname))
+    logfile.write("******************************************\n")
+    logfile.close()
+    
     for i, order in enumerate(orders):
+      logfile = open("trimlog.dat", "a")
+      logfile.write("********   Order %i  ******************\n" %(i+1))
+      logfile.close()
       trim.InputData(order)
       order = trim.Plot()
 

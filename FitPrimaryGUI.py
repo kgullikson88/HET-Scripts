@@ -236,7 +236,7 @@ class LineFitter:
     
     
   
-  def ConvolveSmooth(self, numiters=10, lowreject=2, highreject=2):
+  def ConvolveSmooth(self, numiters=10, lowreject=2, highreject=3):
     done = False
     data = self.smoothing_data.copy()
     #data.y /= data.cont
