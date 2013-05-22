@@ -15,6 +15,10 @@ modeldir = homedir + "/School/Research/Models/Sorted/Stellar/Vband/"
 #Define regions contaminated by telluric residuals or other defects. We will not use those regions in the cross-correlation
 badregions = [[588.8, 589.9],
               [627.1, 635.4]]
+badregions = [[627, 634],
+              [686, 706],
+              [716, 742],
+              [759, 775]]
 
 #Set up model list
 model_list = [ modeldir + "lte30-4.00-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted",
