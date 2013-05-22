@@ -14,17 +14,19 @@ if __name__ == "__main__":
     else:
       fileList.append(arg)
 
-  for fname in fileList:
+  for fnum, fname in enumerate(fileList):
     orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", cont="continuum", errors="error")
     print fname, len(orders)
+    plt.figure(fnum)
     if tellurics:
       model = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="model")
     for i, order in enumerate(orders):
-      order.cont = FindContinuum.Continuum(order.x, order.y)
+      order.cont = FindContinuum.Continuum(order.x, order.y, lowreject=3, highreject=3)
       if tellurics:
         plt.plot(order.x, order.y/order.cont, 'k-')
         plt.plot(order.x, model[i].y, 'r-')
       else:
-        plt.plot(order.x, order.y/order.cont)
+        plt.plot(order.x, order.y)
+        plt.plot(order.x, order.cont)
       
-    plt.show()
+  plt.show()

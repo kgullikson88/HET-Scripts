@@ -44,8 +44,12 @@ def Correct(original, corrected, offset=None):
     except IndexError:
       model = DataStructures.xypoint(x=data.x, y=numpy.ones(data.x.size))
       print "Warning!!! Telluric Model not found for order %i" %i
-    print data.y.shape
-    print model.y.shape
+
+    #plt.plot(data.x, data.y/data.cont)
+    #plt.plot(model.x, model.y)
+    #plt.show()
+    print data.x
+    print model.x
     data.y /= model.y
     original_orders[i] = data.copy()
   return original_orders
@@ -72,3 +76,40 @@ if __name__ == "__main__":
       else:
         FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename)
     plt.show()
+
+  else:
+    allfiles = os.listdir("./")
+    corrected_files = [f for f in allfiles if "Corrected_" in f]
+    #original_files = [f for f in allfiles if any(f in cf for cf in corrected_files)]
+
+    #print corrected_files
+    #print original_files
+
+    for corrected in corrected_files:
+      original = [f for f in allfiles if (f in corrected and f != corrected)]
+      if len(original) == 1:
+        original = original[0]
+      else:
+        sys.exit("Error! %i matches found to corrected file %s" %(len(original), corrected))
+
+      print corrected, original
+      outfilename = "%s_telluric_corrected.fits" %(original.split(".fits")[0])
+      print "Outputting to %s" %outfilename
+
+      corrected_orders = Correct(original, corrected, offset=None)
+
+      for i, data in enumerate(corrected_orders):
+        plt.plot(data.x, data.y/data.cont)
+        #Set up data structures for OutputFitsFile
+        columns = {"wavelength": data.x,
+                   "flux": data.y,
+                   "continuum": data.cont,
+                   "error": data.err}
+        if i == 0:
+          FitsUtils.OutputFitsFileExtensions(columns, original, outfilename, mode="new")
+        else:
+          FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename)
+      plt.title(original)
+      plt.xlabel("Wavelength (nm)")
+      plt.ylabel("Flux")
+      plt.show()
