@@ -2,7 +2,8 @@ import pyfits
 import numpy
 from numpy.polynomial import chebyshev
 import DataStructures
-import Units
+#import Units
+from astropy import units, constants
 import FindContinuum
 import readmultispec as multispec
 import subprocess
@@ -112,8 +113,9 @@ def MakeXYpoints(datafile, errors=False, extensions=False, x=None, y=None, cont=
         if "label=Wavelength"  in header[key] and "units" in header[key]:
           units = header[key].split("units=")[-1]
           if units == "angstroms" or units == "Angstroms":
-            wave_factor = Units.nm/Units.angstrom
-            print "Wavelength units are Angstroms. Scaling wavelength by ", wave_factor
+            #wave_factor = Units.nm/Units.angstrom
+            wave_factor = units.angstrom.to(units.nm)
+	    print "Wavelength units are Angstroms. Scaling wavelength by ", wave_factor
 
     if errors == False:
       numorders = retdict['flux'].shape[0]

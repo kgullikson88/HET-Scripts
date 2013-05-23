@@ -8,6 +8,7 @@ import TelluricFitter
 import FitsUtils
 import DataStructures
 import Units
+from astropy import units, constants
 import FindContinuum
 
 homedir = os.environ["HOME"]
@@ -25,8 +26,10 @@ if __name__ == "__main__":
  
   fileList = []
   start = 0
+  makenew = True
   for arg in sys.argv[1:]:
     if "-start" in arg:
+      makenew = False
       start = int(arg.split("=")[-1])
     else:
       fileList.append(arg)
@@ -75,7 +78,7 @@ if __name__ == "__main__":
     
     
     angle = float(header["ZD"])
-    resolution = 30000.0
+    resolution = 60000.0
     humidity = RH[bestindex]
     T_fahrenheit = T[bestindex]
     pressure = P[bestindex]*Units.hPa/Units.inch_Hg
@@ -190,7 +193,7 @@ if __name__ == "__main__":
           print "Not saving the following info: %s" %(fitter.parnames[j])
       
       
-      if i == 0:
+      if i == 0 and makenew:
         FitsUtils.OutputFitsFileExtensions(columns, fname, outfilename, header_info=header_info, mode="new")
       else:
         FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, header_info=header_info, mode="append")

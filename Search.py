@@ -7,7 +7,9 @@ import sys
 import DataStructures
 import FindContinuum
 import matplotlib.pyplot as plt
-import Units
+#import Units
+from astropy import units, constants
+
 
 homedir = os.environ["HOME"]
 modeldir = homedir + "/School/Research/Models/Sorted/Stellar/Vband/"
@@ -225,6 +227,6 @@ if __name__ == "__main__":
 
     #Do the cross-correlation
     for vsini in [10, 20, 30, 40]:
-      Correlate.PyCorr(data, combine=False, resolution=30000, outdir="Cross_correlations/%s" %(fname.split(".fits")[0]), models=model_list, stars=star_list, temps=temp_list, gravities=gravity_list, metallicities=metal_list, vsini=vsini*Units.cm/Units.km, pause=10)
+      Correlate.PyCorr(data, combine=False, resolution=30000, outdir="Cross_correlations/%s" %(fname.split(".fits")[0]), models=model_list, stars=star_list, temps=temp_list, gravities=gravity_list, metallicities=metal_list, vsini=vsini*units.km.to(units.cm), pause=10)
 
 

@@ -7,7 +7,9 @@ import MakeModel
 import DataStructures
 import FindContinuum
 import FitsUtils
-import Units
+#import Units
+from astropy import units, constants
+
 
 Corr_dir = "Cross_Correlations/"
 model_dir = "%s/School/Research/Models/Sorted/Stellar/Vband/" %(os.environ["HOME"])
@@ -70,9 +72,9 @@ if __name__ == "__main__":
     #modelfile = [f for f in modelfiles if f.startswith(modelstart)][0]
     modelfile = "lte40-4.0+0.5.Cond.PHOENIX2004.tab.7.sorted"
     x,y = numpy.loadtxt("%s%s" %(model_dir, modelfile), usecols=(0,1), unpack=True)
-    x *= Units.nm/Units.angstrom
+    x *= units.angstrom.to(units.nm)
     #x /= 1.00026
-    x *= 1 - velocity*Units.cm/Units.km / Units.c
+    x *= 1 - velocity*units.km.to(units.cm) / constants.c.cgs.value
     y = 10**y
     model = DataStructures.xypoint(x=x, y=y)
 
