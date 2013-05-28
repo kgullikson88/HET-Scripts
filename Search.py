@@ -224,11 +224,11 @@ if __name__ == "__main__":
       left = numpy.searchsorted(data.x, region[0])
       right = numpy.searchsorted(data.x, region[1])
       data.y[left:right] = data.cont[left:right]
-    plt.plot(data.x, data.y/data.cont)
-    plt.show()
-    sys.exit()
+    #plt.plot(data.x, data.y/data.cont)
+    #plt.show()
+    #sys.exit()
     #Do the cross-correlation
     for vsini in [10, 20, 30, 40]:
-      Correlate.PyCorr(data, combine=False, resolution=60000, outdir="Cross_correlations/%s" %(fname.split(".fits")[0]), models=model_list, stars=star_list, temps=temp_list, gravities=gravity_list, metallicities=metal_list, vsini=vsini*Units.cm/Units.km, debug=True)
+      Correlate.PyCorr(data, combine=False, resolution=60000, outdir="Cross_correlations/%s" %(fname.split(".fits")[0]), models=model_list, stars=star_list, temps=temp_list, gravities=gravity_list, metallicities=metal_list, vsini=vsini*units.km.to(units.cm), debug=False)
 
 
