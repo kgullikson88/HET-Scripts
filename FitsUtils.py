@@ -449,7 +449,6 @@ def OutputFitsFileExtensions(column_dict, template, outfilename, mode="append", 
     for i in range(len(hdulist)-1):
       hdulist.pop()
     hdulist.append(tablehdu)
-    print hdulist[0].header, "\n\n"
   hdulist.writeto(outfilename, clobber=True, output_verify='ignore')
   hdulist.close()
 

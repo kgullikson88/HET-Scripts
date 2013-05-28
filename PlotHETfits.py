@@ -8,9 +8,12 @@ import FindContinuum
 if __name__ == "__main__":
   fileList = []
   tellurics = False
+  normalize = False
   for arg in sys.argv[1:]:
     if "tellcorr" in arg:
       tellurics = True
+    if "-norm" in arg:
+      normalize = True
     else:
       fileList.append(arg)
 
@@ -26,7 +29,10 @@ if __name__ == "__main__":
         plt.plot(order.x, order.y/order.cont, 'k-')
         plt.plot(order.x, model[i].y, 'r-')
       else:
-        plt.plot(order.x, order.y)
-        plt.plot(order.x, order.cont)
+        if normalize:
+          plt.plot(order.x, order.y/order.cont)
+        else:
+          plt.plot(order.x, order.y)
+          plt.plot(order.x, order.cont)
       
   plt.show()

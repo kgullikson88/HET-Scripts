@@ -30,10 +30,8 @@ def Correct(original, corrected, offset=None):
   #Read in the data and model
   original_orders = FitsUtils.MakeXYpoints(original, extensions=True, x="wavelength", y="flux", errors="error", cont="continuum")
   corrected_orders, corrected_headers = ReadCorrectedFile(corrected)
-  print len(original_orders), len(corrected_orders)
   if offset == None:
     offset = len(original_orders) - len(corrected_orders)
-  print offset
   for i in range(offset, len(original_orders)):
     data = original_orders[i]
     data.cont = FindContinuum.Continuum(data.x, data.y)
@@ -48,13 +46,11 @@ def Correct(original, corrected, offset=None):
     #plt.plot(data.x, data.y/data.cont)
     #plt.plot(model.x, model.y)
     #plt.show()
-    print data.x
-    print model.x
     data.y /= model.y
     original_orders[i] = data.copy()
   return original_orders
 
-if __name__ == "__main__":
+def main1():
   if len(sys.argv) > 2:
     original = sys.argv[1]
     corrected = sys.argv[2]
@@ -79,7 +75,7 @@ if __name__ == "__main__":
 
   else:
     allfiles = os.listdir("./")
-    corrected_files = [f for f in allfiles if "Corrected_" in f]
+    corrected_files = [f for f in allfiles if "Corrected_" in f and f.endswith(".fits")]
     #original_files = [f for f in allfiles if any(f in cf for cf in corrected_files)]
 
     #print corrected_files
@@ -113,3 +109,9 @@ if __name__ == "__main__":
       plt.xlabel("Wavelength (nm)")
       plt.ylabel("Flux")
       plt.show()
+
+
+
+
+if __name__ == "__main__":
+  main1()

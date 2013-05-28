@@ -17,7 +17,10 @@ modeldir = homedir + "/School/Research/Models/Sorted/Stellar/Vband/"
 #Define regions contaminated by telluric residuals or other defects. We will not use those regions in the cross-correlation
 badregions = [[588.8, 589.9],
               [627.1, 635.4]]
-badregions = [[627, 634],
+badregions = [[0, 466],
+              [567.5, 575.5],
+              [587.5, 593],
+              [627, 634],
               [686, 706],
               [716, 742],
               [759, 775]]
@@ -172,7 +175,7 @@ if __name__ == "__main__":
   fileList = []
   extensions=True
   tellurics=False
-  trimsize = 50
+  trimsize = 100
   for arg in sys.argv[1:]:
     if "-e" in arg:
       extensions=False
@@ -199,15 +202,14 @@ if __name__ == "__main__":
     for i, order in enumerate(orders):
       order.x = order.x[trimsize:-trimsize]
       order.y = order.y[trimsize:-trimsize]
-      order.cont = order.cont[trimsize:-trimsize]
+      order.cont = FindContinuum.Continuum(order.x, order.y, lowreject=2.5, highreject=2.5)
+      #order.cont = order.cont[trimsize:-trimsize]
       order.err = order.err[trimsize:-trimsize]
       if order.x.size > 10:
         orders[i] = order.copy()
       else:
         orders[i].pop(i-numremoved)
         numremoved += 1
-    
-
     xspacing = 1e9
     for i, order in enumerate(orders):
       orders[i].cont = FindContinuum.Continuum(order.x, order.y, lowreject=2, highreject=2)
@@ -216,17 +218,17 @@ if __name__ == "__main__":
         xspacing = spacing
       
     data = DataStructures.CombineXYpoints(orders, xspacing=xspacing)
-
+    
     #Remove bad regions from the data
     for region in badregions:
       left = numpy.searchsorted(data.x, region[0])
       right = numpy.searchsorted(data.x, region[1])
       data.y[left:right] = data.cont[left:right]
-    #plt.plot(data.x, data.y/data.cont)
-    #plt.show()
-
+    plt.plot(data.x, data.y/data.cont)
+    plt.show()
+    sys.exit()
     #Do the cross-correlation
     for vsini in [10, 20, 30, 40]:
-      Correlate.PyCorr(data, combine=False, resolution=30000, outdir="Cross_correlations/%s" %(fname.split(".fits")[0]), models=model_list, stars=star_list, temps=temp_list, gravities=gravity_list, metallicities=metal_list, vsini=vsini*units.km.to(units.cm), pause=10)
+      Correlate.PyCorr(data, combine=False, resolution=60000, outdir="Cross_correlations/%s" %(fname.split(".fits")[0]), models=model_list, stars=star_list, temps=temp_list, gravities=gravity_list, metallicities=metal_list, vsini=vsini*Units.cm/Units.km, debug=True)
 
 
