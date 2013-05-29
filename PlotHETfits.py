@@ -31,6 +31,7 @@ if __name__ == "__main__":
       else:
         if normalize:
           plt.plot(order.x, order.y/order.cont)
+          plt.text(order.x.mean(), 1.1, str(i+1))
         else:
           plt.plot(order.x, order.y)
           plt.plot(order.x, order.cont)

@@ -9,6 +9,7 @@ import FindContinuum
 import FitsUtils
 #import Units
 from astropy import units, constants
+import RotBroad
 
 
 Corr_dir = "Cross_Correlations/"
@@ -23,7 +24,7 @@ if __name__ == "__main__":
   files = os.listdir(Corr_dir)
   fileList = defaultdict(list)
   for fname in files:
-    if fname.startswith(basename):
+    if fname.startswith(basename) and fname.endswith("-0.0"):
       vsini = float(fname.split("kps")[0].split(".")[-1])
       fileList[vsini].append(fname)
   for val in sorted(fileList.keys()):
@@ -62,21 +63,22 @@ if __name__ == "__main__":
     Tmax = Temperatures[maxindex]
     loggmax = G[maxindex]
     metalmax = Z[maxindex]
-    Tmax = 4000
-    loggmax = 4.0
-    metalmax=0.5
+    #Tmax = 4000
+    #loggmax = 4.0
+    #metalmax=0.5
     print "T = %g\nlogg = %g\nZ = %g" %(Tmax, loggmax, metalmax)
 
     #Find model file with best fit
     modelstart = "lte%.2i-%.2f%+.1f" %(Tmax/100.0, loggmax, metalmax)
-    #modelfile = [f for f in modelfiles if f.startswith(modelstart)][0]
-    modelfile = "lte40-4.0+0.5.Cond.PHOENIX2004.tab.7.sorted"
+    modelfile = [f for f in modelfiles if f.startswith(modelstart)][0]
+    #modelfile = "lte40-4.0+0.5.Cond.PHOENIX2004.tab.7.sorted"
     x,y = numpy.loadtxt("%s%s" %(model_dir, modelfile), usecols=(0,1), unpack=True)
     x *= units.angstrom.to(units.nm)
     #x /= 1.00026
     x *= 1 - velocity*units.km.to(units.cm) / constants.c.cgs.value
     y = 10**y
     model = DataStructures.xypoint(x=x, y=y)
+    print "vsini = ", val
 
     #Find original filename from the current directory
     filename = "%s.fits" %(basename)
@@ -88,6 +90,7 @@ if __name__ == "__main__":
         #segment = DataStructures.xypoint(x=model.x[left:right], y=model.y[left:right])
         segment = MakeModel.RebinData(model, order.x)
         segment.cont = FindContinuum.Continuum(segment.x, segment.y)
+        segment = RotBroad.Broaden(segment, val*units.km.to(units.cm))
         segment = MakeModel.ReduceResolution(segment, 50000)
         order.cont = FindContinuum.Continuum(order.x, order.y)
 
