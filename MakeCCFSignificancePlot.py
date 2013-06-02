@@ -20,6 +20,9 @@ if __name__ == "__main__":
   basename = sys.argv[1]
   velocity = float(sys.argv[2])  #Turn this into an optional argument later...
   scale = 0.1
+
+  if basename.endswith(".fits"):
+    basename = basename[:-5]
   
   files = os.listdir(Corr_dir)
   fileList = defaultdict(list)

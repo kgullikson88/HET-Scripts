@@ -23,7 +23,7 @@ badregions = [[0, 466],
               [627, 634.5],
               [686, 706],
               [716, 742],
-              [759, 775]]
+              [759, 9e9]]
 
 #Set up model list
 model_list = [ modeldir + "lte30-4.00-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted",
@@ -223,17 +223,18 @@ if __name__ == "__main__":
         order.cont = FindContinuum.Continuum(order.x, order.y, lowreject=3, highreject=3)
         orders[numorders -1 -i] = order.copy()
       else:
+        print "Removing order %i" %(numorders - 1 - i)
         orders.pop(numorders - 1 - i)
 
     """
     for i, order in enumerate(orders):
       plt.plot(order.x, order.y/order.cont+i)
-    plt.show()
+      plt.show()
     sys.exit()
     """
         
     #Do the cross-correlation
     for vsini in [10, 20, 30, 40]:
-      Correlate.PyCorr2(orders, resolution=60000, outdir="Cross_correlations/%s" %(fname.split(".fits")[0]), models=model_data, stars=star_list, temps=temp_list, gravities=gravity_list, metallicities=metal_list, vsini=vsini*units.km.to(units.cm), debug=False, outfilebase=fname)
+      Correlate.PyCorr2(orders, resolution=60000, outdir="Cross_correlations/%s" %(fname.split(".fits")[0]), models=model_data, stars=star_list, temps=temp_list, gravities=gravity_list, metallicities=metal_list, vsini=vsini*units.km.to(units.cm), debug=True, outfilebase=fname)
 
 
