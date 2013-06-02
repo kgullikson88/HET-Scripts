@@ -12,7 +12,7 @@ if __name__ == "__main__":
   for arg in sys.argv[1:]:
     if "tellcorr" in arg:
       tellurics = True
-    if "-norm" in arg:
+    elif "-norm" in arg:
       normalize = True
     else:
       fileList.append(arg)

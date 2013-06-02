@@ -132,7 +132,9 @@ if __name__ == "__main__":
         logfile.write("Skipping order %i\n" %(i+start))
         print "Skipping order %i" %(i+start)
         data = order.copy()
-        model = DataStructures.xypoint(x=order.x.copy(), y=numpy.ones(order.x.size))
+        fitter.resolution_fit_mode = "gauss"
+        model = fitter.GenerateModel(fitpars, LineList)
+        #model = DataStructures.xypoint(x=order.x.copy(), y=numpy.ones(order.x.size))
         primary = model.copy()
       elif model_amplitude >= 0.01 and model_amplitude < 0.1:
         logfile.write("Fitting order %i with guassian line profiles\n" %(i+start)) 
