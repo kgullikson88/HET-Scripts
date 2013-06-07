@@ -66,6 +66,10 @@ if __name__ == "__main__":
       T = float(model[3:5])*100
       logg = float(model[6:9])
       Z = float(model[9:13])
+    elif "KURUCZ" in model:
+      T = float(model[3:5])*100
+      logg = float(model[6:10])
+      Z = float(model[10:14])
     else:
       continue
 
