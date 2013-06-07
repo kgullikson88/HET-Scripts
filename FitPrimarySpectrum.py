@@ -80,8 +80,13 @@ if __name__ == "__main__":
 
       if file_dict[T][logg][Z] == "":
         file_dict[T][logg][Z] = model
+      elif "KURUCZ" in model:
+        #Prefer the KURUCZ models that I make over everything else
+        file_dict[T][logg][Z] = model
+      elif "KURUCZ" in file_dict[T][logg][Z]:
+        continue
       elif "PHOENIX-ACES" in model and "PHOENIX2004" in file_dict[T][logg][Z]:
-        #Prefer PHOENIX_ACES
+        #Prefer PHOENIX_ACES over PHOENIX2004 (ACES was made in 2009)
         file_dict[T][logg][Z] = model
       else:
         print "Two models with the same T, logg, and Z!"
@@ -102,6 +107,7 @@ if __name__ == "__main__":
         #model_dict[T][logg][Z] = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026,
         #                                                y=10**y)
         model = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026, y=10**y)
+        model.cont = FittingUtilities.Continuum(model.x, model.y, fitorder=15, lowreject=1.5, highreject=10)
         model = RotBroad.Broaden(model, vsini*units.km.to(units.cm) )
         model_dict[T][logg][Z] = interp(model.x, model.y)
 
@@ -137,11 +143,14 @@ if __name__ == "__main__":
           for order in orders:
             order.cont = FittingUtilities.Continuum(order.x, order.y)
             model = DataStructures.xypoint(x=order.x,
-                                           y=model_dict[T][logg][Z](order.x*(1+rv/constants.c.cgs.value)) )
+                    y=model_dict[T][logg][Z](order.x*(1+rv/constants.c.cgs.value)) )
             model.cont = FittingUtilities.Continuum(model.x, model.y, lowreject=1.5, highreject=10)
             model = MakeModel.ReduceResolution(model, 60000)
             chisq += numpy.sum( (order.y - model.y/model.cont*order.cont)**2 / order.err**2 )
             norm += order.size()
+            plt.plot(order.x, order.y/order.cont, 'k-')
+            plt.plot(model.x, model.y/model.cont, 'r-')
+          plt.show()
           chisq /= float(norm)
           print T, logg, Z, rv, chisq
           if chisq < best_chisq:
@@ -165,6 +174,8 @@ if __name__ == "__main__":
       plt.figure(1)
       plt.plot(order.x, order.y/order.cont, 'k-')
       plt.plot(model.x, model.y/model.cont, 'r-')
+      plt.figure(3)
+      plt.plot(order.x, order.y / (model.y*order.cont))
       order.y -= model.y/model.cont*order.cont
       plt.figure(2)
       plt.plot(order.x, order.y/order.cont)
