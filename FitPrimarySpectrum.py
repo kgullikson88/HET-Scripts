@@ -31,8 +31,14 @@ def BroadeningErrorFunction(pars, data, unbroadened):
 #oversampling is the oversampling factor to use before doing the SVD
 #m is the size of the broadening function, in oversampled units
 #dimension is the number of eigenvalues to keep in the broadening function. (Keeping too many starts fitting noise)
-def Broaden(data, model, oversampling = 5, m = 101, dimension = 15):
+def Broaden(data, model, oversampling = 5, m = 201, dimension = 15):
   n = data.x.size*oversampling
+  
+  #n must be even, and m must be odd!
+  if n%2 != 0:
+    n += 1
+  if m%2 == 0:
+    m += 1
   
   #resample data
   Spectrum = interp(data.x, data.y/data.cont)
@@ -84,8 +90,7 @@ def Broaden(data, model, oversampling = 5, m = 101, dimension = 15):
   model_new = Model(xnew)
   Broadening = numpy.array(Broadening)[...,0]
 
-  plt.plot(Broadening)
-  plt.show()
+  
   #If we get here, the broadening function looks okay.
   #Convolve the model with the broadening function
   model = DataStructures.xypoint(x=xnew)
@@ -118,19 +123,19 @@ def main4():
       unbroadened.y[idx] = y
       #plt.plot([x, x], [y-0.05, y-0.1], 'r-')
     plt.plot(unbroadened.x, unbroadened.y)
-    #model = Broaden(order, unbroadened)
-    model = RotBroad.Broaden(unbroadened, 100*units.km.to(units.cm), beta=1)
-    model2 = RotBroad.Broaden(unbroadened, 200*units.km.to(units.cm), beta=1)
+    model = Broaden(order, unbroadened, m=401, dimension=20)
+    #model = RotBroad.Broaden(unbroadened, 100*units.km.to(units.cm), beta=1)
+    #model2 = RotBroad.Broaden(unbroadened, 200*units.km.to(units.cm), beta=1)
 
     plt.plot(model.x, model.y)
-    plt.plot(model2.x, model2.y)
+    #plt.plot(model2.x, model2.y)
     plt.show()
 
 
 
 def main3():
   model_dir = "%s/School/Research/Models/Sorted/Stellar/Vband/" %(os.environ["HOME"])
-  modelfile = "%slte86-4.00+0.5-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
+  modelfile = "%slte86-4.00+0.0-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
   vsini = 150.0
   beta = 1.0
   x, y = numpy.loadtxt(modelfile, usecols=(0,1), unpack=True)
@@ -149,8 +154,8 @@ def main3():
     right = numpy.searchsorted(model.x, 2*order.x[-1] - order.x[0])
     unbroadened = model[left:right]
     
-    model2 = Broaden(order, unbroadened)
-    model2 = MakeModel.RebinData(model2, order.x)
+    model2 = Broaden(order, unbroadened, m=401, dimension=20)
+    #model2 = MakeModel.RebinData(model2, order.x)
     model2.cont = FittingUtilities.Continuum(model2.x, model2.y, lowreject=1.5, highreject=10)
 
     plt.figure(1)
@@ -355,11 +360,12 @@ def main1():
               model.y /= model.cont
               model = MakeModel.ReduceResolution(model, 60000)
               model.y *= model.cont
+            model.y *= model.cont
             chisq += numpy.sum( (order.y - model.y/model.cont*order.cont)**2 / order.err**2 )
             norm += order.size()
-            plt.plot(order.x, order.y/order.cont, 'k-')
-            plt.plot(model.x, model.y/model.cont, 'r-')
-          plt.show()
+            #plt.plot(order.x, order.y/order.cont, 'k-')
+            #plt.plot(model.x, model.y/model.cont, 'r-')
+          #plt.show()
           chisq /= float(norm)
           print T, logg, Z, rv, chisq
           if chisq < best_chisq:
@@ -393,4 +399,4 @@ def main1():
           
     
 if __name__ == "__main__":
-  main4()
+  main3()
