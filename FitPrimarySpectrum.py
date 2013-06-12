@@ -1,6 +1,9 @@
 import numpy
 import matplotlib.pyplot as plt
 from scipy.interpolate import InterpolatedUnivariateSpline as interp
+from scipy.optimize import leastsq, brute
+from scipy import mat
+from scipy.linalg import svd, diagsvd
 import sys
 import os
 import FitsUtils
@@ -13,10 +16,204 @@ import FittingUtilities
 import FindContinuum
 
 
-if __name__ == "__main__":
+
+def BroadeningErrorFunction(pars, data, unbroadened):
+  vsini, beta = pars[0]*units.km.to(units.cm), pars[1]
+  #print vsini, beta
+  #data, unbroadened = args[0], args[1]
+  model = RotBroad.Broaden(unbroadened, vsini, beta=beta)
+  model = MakeModel.RebinData(model, data.x)
+  return numpy.sum( FittingUtilities.GeneralLSErrorFunction(data, model) )
+
+
+
+#Fits the broadening profile using singular value decomposition
+#oversampling is the oversampling factor to use before doing the SVD
+#m is the size of the broadening function, in oversampled units
+#dimension is the number of eigenvalues to keep in the broadening function. (Keeping too many starts fitting noise)
+def Broaden(data, model, oversampling = 5, m = 101, dimension = 15):
+  n = data.x.size*oversampling
+  
+  #resample data
+  Spectrum = interp(data.x, data.y/data.cont)
+  Model = interp(model.x, model.y)
+  xnew = numpy.linspace(data.x[0], data.x[-1], n)
+  ynew = Spectrum(xnew)
+  model_new = Model(xnew)
+
+  #Make 'design matrix'
+  design = numpy.zeros((n-m,m))
+  for j in range(m):
+    for i in range(m/2,n-m/2-1):
+      design[i-m/2,j] = model_new[i-j+m/2]
+  design = mat(design)
+    
+  #Do Singular Value Decomposition
+  try:
+    U,W,V_t = svd(design, full_matrices=False)
+  except numpy.linalg.linalg.LinAlgError:
+    outfilename = "SVD_Error.log"
+    outfile = open(outfilename, "a")
+    numpy.savetxt(outfile, numpy.transpose((data.x, data.y, data.cont)))
+    outfile.write("\n\n\n\n\n")
+    numpy.savetxt(outfile, numpy.transpose((model.x, model.y, model.cont)))
+    outfile.write("\n\n\n\n\n")
+    outfile.close()
+    sys.exit("SVD did not converge! Outputting data to %s" %outfilename)
+      
+  #Invert matrices:
+  #   U, V are orthonormal, so inversion is just their transposes
+  #   W is a diagonal matrix, so its inverse is 1/W
+  W1 = 1.0/W
+  U_t = numpy.transpose(U)
+  V = numpy.transpose(V_t)
+  
+  #Remove the smaller values of W
+  W1[dimension:] = 0
+  W2 = diagsvd(W1,m,m)
+    
+  #Solve for the broadening function
+  spec = numpy.transpose(mat(ynew[m/2:n-m/2-1]))
+  temp = numpy.dot(U_t, spec)
+  temp = numpy.dot(W2,temp)
+  Broadening = numpy.dot(V,temp)
+
+  #Make Broadening function a 1d array
+  spacing = xnew[2] - xnew[1]
+  xnew = numpy.arange(model.x[0], model.x[-1], spacing)
+  model_new = Model(xnew)
+  Broadening = numpy.array(Broadening)[...,0]
+
+  plt.plot(Broadening)
+  plt.show()
+  #If we get here, the broadening function looks okay.
+  #Convolve the model with the broadening function
+  model = DataStructures.xypoint(x=xnew)
+  Broadened = interp(xnew, numpy.convolve(model_new,Broadening, mode="same") )
+  model.y = Broadened(model.x)
+  
+  return MakeModel.RebinData(model, data.x)
+
+
+def main4():
+  linelist = "../Scripts/LineList.dat"
+  lines, strengths = numpy.loadtxt(linelist, unpack=True)
+
+  fname = "HIP_70384.fits"
+  orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", errors="error")
+
+  for i, order in enumerate(orders):
+    order.cont = FittingUtilities.Continuum(order.x, order.y)
+    plt.plot(order.x, order.y/order.cont)
+    left = numpy.searchsorted(lines, order.x[0])
+    right = numpy.searchsorted(lines, order.x[-1])
+    print right - left + 1
+    unbroadened = order.copy()
+    unbroadened.y = numpy.ones(unbroadened.x.size)
+    unbroadened.cont = numpy.ones(unbroadened.x.size)
+    for j, line in enumerate(lines[left:right]):
+      x = line
+      y = strengths[j+left]
+      idx = numpy.argmin(numpy.abs(unbroadened.x - line))
+      unbroadened.y[idx] = y
+      #plt.plot([x, x], [y-0.05, y-0.1], 'r-')
+    plt.plot(unbroadened.x, unbroadened.y)
+    #model = Broaden(order, unbroadened)
+    model = RotBroad.Broaden(unbroadened, 100*units.km.to(units.cm), beta=1)
+    model2 = RotBroad.Broaden(unbroadened, 200*units.km.to(units.cm), beta=1)
+
+    plt.plot(model.x, model.y)
+    plt.plot(model2.x, model2.y)
+    plt.show()
+
+
+
+def main3():
+  model_dir = "%s/School/Research/Models/Sorted/Stellar/Vband/" %(os.environ["HOME"])
+  modelfile = "%slte86-4.00+0.5-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
+  vsini = 150.0
+  beta = 1.0
+  x, y = numpy.loadtxt(modelfile, usecols=(0,1), unpack=True)
+  model = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026, y=10**y)
+  model.cont = FittingUtilities.Continuum(model.x, model.y, fitorder=15, lowreject=1.5, highreject=10)
+  #model2 = RotBroad.Broaden(model, vsini*units.km.to(units.cm))
+
+  fname = "HIP_70384.fits"
+  orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", errors="error")
+
+  for i, order in enumerate(orders):
+    order.cont = FittingUtilities.Continuum(order.x, order.y)
+
+    #Fit broadening
+    left = numpy.searchsorted(model.x, 2*order.x[0] - order.x[-1])
+    right = numpy.searchsorted(model.x, 2*order.x[-1] - order.x[0])
+    unbroadened = model[left:right]
+    
+    model2 = Broaden(order, unbroadened)
+    model2 = MakeModel.RebinData(model2, order.x)
+    model2.cont = FittingUtilities.Continuum(model2.x, model2.y, lowreject=1.5, highreject=10)
+
+    plt.figure(1)
+    plt.plot(order.x, order.y/order.cont, 'k-')
+    plt.plot(unbroadened.x, unbroadened.y/unbroadened.cont, 'g-')
+    plt.plot(model2.x, model2.y/model2.cont, 'r-')
+    plt.figure(3)
+    plt.plot(order.x, order.y / (model2.y*order.cont))
+    order.y -= model2.y/model2.cont*order.cont
+    plt.figure(2)
+    plt.plot(order.x, order.y/order.cont)
+  plt.show()
+    
+
+
+def main2():
+  model_dir = "%s/School/Research/Models/Sorted/Stellar/Vband/" %(os.environ["HOME"])
+  modelfile = "%slte86-4.00+0.5-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
+  vsini = 150.0
+  beta = 1.0
+  x, y = numpy.loadtxt(modelfile, usecols=(0,1), unpack=True)
+  model = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026, y=10**y)
+  model.cont = FittingUtilities.Continuum(model.x, model.y, fitorder=15, lowreject=1.5, highreject=10)
+  #model2 = RotBroad.Broaden(model, vsini*units.km.to(units.cm))
+
+  fname = "HIP_70384.fits"
+  orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", errors="error")
+
+  for i, order in enumerate(orders):
+    order.cont = FittingUtilities.Continuum(order.x, order.y)
+
+    #Fit broadening
+    left = numpy.searchsorted(model.x, 2*order.x[0] - order.x[-1])
+    right = numpy.searchsorted(model.x, 2*order.x[-1] - order.x[0])
+    unbroadened = model[left:right]
+    pars = [vsini, beta]
+    grid = [[120, 200, 10],
+            [0.2, 1.8, 0.1]]
+    #fitpars, fitval = leastsq(BroadeningErrorFunction, pars, args=(order, unbroadened))
+    #fitvsini, fitbeta = fitpars[0], fitpars[1]
+    fitvsini, fitbeta = brute(BroadeningErrorFunction, grid, args=(order, unbroadened), finish=None )
+    print "Fitted values for order %i:\n\tvsini = %g\n\tbeta = %g" %(i+1, fitvsini, fitbeta)
+    model2 = RotBroad.Broaden(unbroadened, fitvsini*units.km.to(units.cm), beta=fitbeta)
+    model2 = MakeModel.RebinData(model2, order.x)
+    model2.cont = FittingUtilities.Continuum(model2.x, model2.y, lowreject=1.5, highreject=10)
+
+    plt.figure(1)
+    plt.plot(order.x, order.y/order.cont, 'k-')
+    plt.plot(model2.x, model2.y/model2.cont, 'r-')
+    plt.figure(3)
+    plt.plot(order.x, order.y / (model2.y*order.cont))
+    order.y -= model2.y/model2.cont*order.cont
+    plt.figure(2)
+    plt.plot(order.x, order.y/order.cont)
+  plt.show()
+    
+    
+
+def main1():
   #Parse command line arguments
   fileList = []
   vsini = 100.0
+  resolution = 60000
   Tmin, Tmax, Tstep = 8000, 8800, 200
   Zmin, Zmax, Zstep = -0.5, 0.5, 0.5
   loggmin, loggmax, loggstep = 4.0, 4.0, 1.0
@@ -44,11 +241,19 @@ if __name__ == "__main__":
       loggstep = float(arg.split("=")[-1])
     elif "modeldir" in arg:
       model_dir = arg.split("=")[-1]
+    elif "resolution" in arg:
+      resolution = float(arg.split("=")[-1])
     else:
       fileList.append(arg)
 
   if not model_dir.endswith("/"):
     model_dir = model_dir + "/"
+
+  reduce_resolution = True
+  v_res = 3e5/resolution
+  if v_res < 0.1*vsini:
+    reduce_resolution = False
+    print "Will not reduce detector resolution: %g\t%g" %(v_res, vsini)
 
   #Read in all of the necessary model files
   allmodels = os.listdir(model_dir)
@@ -108,7 +313,7 @@ if __name__ == "__main__":
         #                                                y=10**y)
         model = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026, y=10**y)
         model.cont = FittingUtilities.Continuum(model.x, model.y, fitorder=15, lowreject=1.5, highreject=10)
-        model = RotBroad.Broaden(model, vsini*units.km.to(units.cm) )
+        model = RotBroad.Broaden(model, vsini*units.km.to(units.cm),  )
         model_dict[T][logg][Z] = interp(model.x, model.y)
 
           
@@ -131,7 +336,8 @@ if __name__ == "__main__":
             order.cont = FittingUtilities.Continuum(order.x, order.y)
             model = DataStructures.xypoint(x=order.x, y=model_dict[T][logg][Z](order.x) )
             model.cont = FittingUtilities.Continuum(model.x, model.y, lowreject=1.5, highreject=10)
-            model = MakeModel.ReduceResolution(model, 60000)
+            if reduce_resolution:
+              model = MakeModel.ReduceResolution(model, 60000)
             #model = RotBroad.Broaden(model, vsini*units.km.to(units.cm))
             offset= FittingUtilities.CCImprove(order, model, be_safe=False)
             rv.append(-offset/order.x.mean() * constants.c.cgs.value)
@@ -145,7 +351,10 @@ if __name__ == "__main__":
             model = DataStructures.xypoint(x=order.x,
                     y=model_dict[T][logg][Z](order.x*(1+rv/constants.c.cgs.value)) )
             model.cont = FittingUtilities.Continuum(model.x, model.y, lowreject=1.5, highreject=10)
-            model = MakeModel.ReduceResolution(model, 60000)
+            if reduce_resolution:
+              model.y /= model.cont
+              model = MakeModel.ReduceResolution(model, 60000)
+              model.y *= model.cont
             chisq += numpy.sum( (order.y - model.y/model.cont*order.cont)**2 / order.err**2 )
             norm += order.size()
             plt.plot(order.x, order.y/order.cont, 'k-')
@@ -170,7 +379,8 @@ if __name__ == "__main__":
       model = DataStructures.xypoint(x=order.x,
                                      y=model_fcn(order.x*(1+best_rv/constants.c.cgs.value)) )
       model.cont = FittingUtilities.Continuum(model.x, model.y, lowreject=1.5, highreject=10)
-      model = MakeModel.ReduceResolution(model, 60000)
+      if reduce_resolution:
+        model = MakeModel.ReduceResolution(model, 60000)
       plt.figure(1)
       plt.plot(order.x, order.y/order.cont, 'k-')
       plt.plot(model.x, model.y/model.cont, 'r-')
@@ -182,3 +392,5 @@ if __name__ == "__main__":
     plt.show()
           
     
+if __name__ == "__main__":
+  main4()
