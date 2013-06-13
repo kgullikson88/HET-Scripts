@@ -419,36 +419,48 @@ def CopyWaveCal(copyfrom, copyto, order=None, scale=1.0):
      "new" mode will create a new fits file. 
      header_info takes a list of lists. Each sub-list should have size 2 where the first element is the name of the new keyword, and the second element is the corresponding value. A 3rd element may be added as a comment
 """
-def OutputFitsFileExtensions(column_dict, template, outfilename, mode="append", header_info=[]):
+def OutputFitsFileExtensions(column_dicts, template, outfilename, mode="append", headers_info=[]):
   #Get header from template. Use this in the new file
   if mode == "new":
     header = pyfits.getheader(template)
     
-
-  columns = []
-  for key in column_dict.keys():
-    columns.append(pyfits.Column(name=key, format="D", array=column_dict[key]))
-  cols = pyfits.ColDefs(columns)
-  tablehdu = pyfits.new_table(cols)
-  
-  #Add keywords to extension header
-  num_keywords = len(header_info)
-  header = tablehdu.header
-  for i in range(num_keywords):
-    info = header_info[i]
-    if len(info) > 2:
-      header.update(info[0], info[1], info[2])
-    elif len(info) == 2:
-      header.update(info[0], info[1])
+  if not isinstance(column_dicts, list):
+    column_dicts = [column_dicts, ]
+  if len(headers_info) < len(column_dicts):
+    for i in range(len(column_dicts) - len(headers_info)):
+      headers_info.append([])
 
   if mode == "append":
     hdulist = pyfits.open(template)
-    hdulist.append(tablehdu)
   elif mode == "new":
     hdulist = pyfits.open(template)
     for i in range(len(hdulist)-1):
       hdulist.pop()
+      
+  for i in range(len(column_dicts)):
+    column_dict = column_dicts[i]
+    header_info = headers_info[i]
+    if not isinstance(column_dicts, list):
+      header_info= [header_info, ]
+    columns = []
+    for key in column_dict.keys():
+      columns.append(pyfits.Column(name=key, format="D", array=column_dict[key]))
+    cols = pyfits.ColDefs(columns)
+    tablehdu = pyfits.new_table(cols)
+  
+    #Add keywords to extension header
+    num_keywords = len(header_info)
+    header = tablehdu.header
+    for i in range(num_keywords):
+      info = header_info[i]
+      if len(info) > 2:
+        header.update(info[0], info[1], info[2])
+      elif len(info) == 2:
+        header.update(info[0], info[1])
+
     hdulist.append(tablehdu)
+
+      
   hdulist.writeto(outfilename, clobber=True, output_verify='ignore')
   hdulist.close()
 

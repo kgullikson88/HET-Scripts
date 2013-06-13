@@ -124,39 +124,68 @@ def main4():
       #plt.plot([x, x], [y-0.05, y-0.1], 'r-')
     plt.plot(unbroadened.x, unbroadened.y)
     model = Broaden(order, unbroadened, m=401, dimension=20)
-    #model = RotBroad.Broaden(unbroadened, 100*units.km.to(units.cm), beta=1)
-    #model2 = RotBroad.Broaden(unbroadened, 200*units.km.to(units.cm), beta=1)
+    model2 = RotBroad.Broaden(unbroadened, 100*units.km.to(units.cm), beta=1)
+    model3 = RotBroad.Broaden(unbroadened, 200*units.km.to(units.cm), beta=1)
 
     plt.plot(model.x, model.y)
-    #plt.plot(model2.x, model2.y)
+    plt.plot(model2.x, model2.y)
+    plt.plot(model3.x, model3.y)
     plt.show()
 
 
 
 def main3():
   model_dir = "%s/School/Research/Models/Sorted/Stellar/Vband/" %(os.environ["HOME"])
-  modelfile = "%slte86-4.00+0.0-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
+  modelfile = "%slte86-4.00-0.5-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
   vsini = 150.0
   beta = 1.0
   x, y = numpy.loadtxt(modelfile, usecols=(0,1), unpack=True)
-  model = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026, y=10**y)
-  model.cont = FittingUtilities.Continuum(model.x, model.y, fitorder=15, lowreject=1.5, highreject=10)
+  MODEL = interp(x*units.angstrom.to(units.nm)/1.00026, 10**y)
+  xlin = numpy.linspace(x[0], x[-1], x.size)
+  #model = DataStructures.xypoint(x=xlin, y=MODEL(xlin))
+  #model = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026, y=10**y)
+  #model.cont = FittingUtilities.Continuum(model.x, model.y, fitorder=15, lowreject=1.5, highreject=10)
   #model2 = RotBroad.Broaden(model, vsini*units.km.to(units.cm))
 
   fname = "HIP_70384.fits"
   orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", errors="error")
 
   for i, order in enumerate(orders):
+    DATA = interp(order.x, order.y)
+    xlin = numpy.linspace(order.x[0], order.x[-1], order.x.size)
+    order = DataStructures.xypoint(x=xlin, y=DATA(xlin))
     order.cont = FittingUtilities.Continuum(order.x, order.y)
+    extended = numpy.append( numpy.append(order.y[::-1]/order.cont[::-1], order.y/order.cont), order.y[::-1]/order.cont[::-1])
+    plt.plot(order.x, order.y)
+    plt.plot(order.x, order.cont)
+    plt.show()
+    plt.plot(extended)
+    plt.show()
+
+    unbroadened = DataStructures.xypoint(x=xlin, y=MODEL(xlin))
+    unbroadened.cont = FittingUtilities.Continuum(unbroadened.x, unbroadened.y, fitorder=4, lowreject=1.5, highreject=10)
+    plt.plot(unbroadened.x, unbroadened.y)
+    plt.plot(unbroadened.x, unbroadened.cont)
+    plt.show()
 
     #Fit broadening
-    left = numpy.searchsorted(model.x, 2*order.x[0] - order.x[-1])
-    right = numpy.searchsorted(model.x, 2*order.x[-1] - order.x[0])
-    unbroadened = model[left:right]
+    #left = numpy.searchsorted(model.x, 2*order.x[0] - order.x[-1])
+    #right = numpy.searchsorted(model.x, 2*order.x[-1] - order.x[0])
+    #unbroadened = model[left:right]
+    size = unbroadened.size()
     
-    model2 = Broaden(order, unbroadened, m=401, dimension=20)
+    #model2 = Broaden(order, unbroadened, m=401, dimension=20)
     #model2 = MakeModel.RebinData(model2, order.x)
+    ycorr = numpy.correlate(extended-1.0, unbroadened.y/unbroadened.cont-1.0, mode='same')[size:-size]
+    #ycorr -= ycorr.min()
+    plt.plot(ycorr)
+    plt.show()
+
+    model2 = order.copy()
+    model2.y = numpy.correlate(extended, ycorr/ycorr.sum(), mode='same')[size:-size]
+    
     model2.cont = FittingUtilities.Continuum(model2.x, model2.y, lowreject=1.5, highreject=10)
+    model2.y = (model2.y/model2.cont-1)*10.0 + model2.cont
 
     plt.figure(1)
     plt.plot(order.x, order.y/order.cont, 'k-')
@@ -167,7 +196,7 @@ def main3():
     order.y -= model2.y/model2.cont*order.cont
     plt.figure(2)
     plt.plot(order.x, order.y/order.cont)
-  plt.show()
+    plt.show()
     
 
 
@@ -399,4 +428,4 @@ def main1():
           
     
 if __name__ == "__main__":
-  main3()
+  main4()

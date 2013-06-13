@@ -30,6 +30,7 @@ def Correct(original, corrected, offset=None):
   #Read in the data and model
   original_orders = FitsUtils.MakeXYpoints(original, extensions=True, x="wavelength", y="flux", errors="error", cont="continuum")
   corrected_orders, corrected_headers = ReadCorrectedFile(corrected)
+  print len(original_orders), len(corrected_orders)
   if offset == None:
     offset = len(original_orders) - len(corrected_orders)
   for i in range(offset, len(original_orders)):
@@ -46,6 +47,15 @@ def Correct(original, corrected, offset=None):
     #plt.plot(data.x, data.y/data.cont)
     #plt.plot(model.x, model.y)
     #plt.show()
+    if model.size() < data.size():
+      left = numpy.searchsorted(data.x, model.x[0])
+      right = numpy.searchsorted(data.x, model.x[-1])
+      if right < data.size():
+        right += 1
+      data = data[left:right]
+    elif model.size() > data.size():
+      sys.exit("Error! Model size (%i) is larger than data size (%i)" %(model.size(), data.size()))
+
     data.y /= model.y
     original_orders[i] = data.copy()
   return original_orders
