@@ -103,31 +103,42 @@ def Broaden(data, model, oversampling = 5, m = 201, dimension = 15):
 def main4():
   linelist = "../Scripts/LineList.dat"
   lines, strengths = numpy.loadtxt(linelist, unpack=True)
+  strengths = 1.0 - strengths
 
   fname = "HIP_70384.fits"
   orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", errors="error")
 
   for i, order in enumerate(orders):
+    DATA = interp(order.x, order.y)
+    order.x, xspacing = numpy.linspace(order.x[0], order.x[-1], order.x.size, retstep=True)
+    order.y = DATA(order.x)
     order.cont = FittingUtilities.Continuum(order.x, order.y)
-    plt.plot(order.x, order.y/order.cont)
+    
     left = numpy.searchsorted(lines, order.x[0])
     right = numpy.searchsorted(lines, order.x[-1])
     print right - left + 1
     unbroadened = order.copy()
-    unbroadened.y = numpy.ones(unbroadened.x.size)
+    unbroadened.y = numpy.zeros(unbroadened.x.size)
     unbroadened.cont = numpy.ones(unbroadened.x.size)
+    deltav = xspacing / numpy.median(order.x) * 3e5
+    print deltav
+    factor = 10./deltav
     for j, line in enumerate(lines[left:right]):
       x = line
       y = strengths[j+left]
-      idx = numpy.argmin(numpy.abs(unbroadened.x - line))
-      unbroadened.y[idx] = y
-      #plt.plot([x, x], [y-0.05, y-0.1], 'r-')
-    plt.plot(unbroadened.x, unbroadened.y)
-    model = Broaden(order, unbroadened, m=401, dimension=20)
-    model2 = RotBroad.Broaden(unbroadened, 100*units.km.to(units.cm), beta=1)
-    model3 = RotBroad.Broaden(unbroadened, 200*units.km.to(units.cm), beta=1)
+      idx = numpy.searchsorted(unbroadened.x, line)
+      unbroadened.y[idx] = -y*factor
+    unbroadened.y += 1.0
+    #model = Broaden(order, unbroadened, m=401, dimension=20)
+    model2 = RotBroad.Broaden2(unbroadened.copy(), 100*units.km.to(units.cm), linear=True)
+    model3 = RotBroad.Broaden2(unbroadened.copy(), 140*units.km.to(units.cm), linear=True)
+    model2 = MakeModel.ReduceResolution(model2, 60000)
+    model3 = MakeModel.ReduceResolution(model3, 60000)
 
-    plt.plot(model.x, model.y)
+    unbroadened.y = (unbroadened.y - 1.0)/factor + 1.0
+    #plt.plot(model.x, model.y)
+    plt.plot(order.x, order.y/order.cont)
+    plt.plot(unbroadened.x, unbroadened.y)
     plt.plot(model2.x, model2.y)
     plt.plot(model3.x, model3.y)
     plt.show()
