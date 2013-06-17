@@ -17,8 +17,8 @@ modeldir = homedir + "/School/Research/Models/Sorted/Stellar/Vband/"
 #Define regions contaminated by telluric residuals or other defects. We will not use those regions in the cross-correlation
 badregions = [[588.8, 589.9],
               [627.1, 635.4]]
-#badregions = [[0, 466],
-badregions = [[0, 540],
+badregions = [[0, 466],
+#badregions = [[0, 540],
               [567.5, 575.5],
               [587.5, 593],
               [627, 634.5],
