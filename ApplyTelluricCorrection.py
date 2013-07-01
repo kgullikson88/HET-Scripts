@@ -73,7 +73,8 @@ def main1():
     print "Outputting to %s" %outfilename
 
     corrected_orders = Correct(original, corrected, offset=None)
-    
+
+    column_list = []
     for i, data in enumerate(corrected_orders):
       plt.plot(data.x, data.y/data.cont)
       #Set up data structures for OutputFitsFile
@@ -81,10 +82,9 @@ def main1():
                  "flux": data.y,
                  "continuum": data.cont,
                  "error": data.err}
-      if i == 0:
-        FitsUtils.OutputFitsFileExtensions(columns, original, outfilename, mode="new")
-      else:
-        FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename)
+      column_list.append(columns)
+    FitsUtils.OutputFitsFileExtensions(column_list, original, outfilename, mode="new")
+    
     plt.show()
 
   else:
@@ -108,6 +108,7 @@ def main1():
 
       corrected_orders = Correct(original, corrected, offset=None)
 
+      column_list = []
       for i, data in enumerate(corrected_orders):
         plt.plot(data.x, data.y/data.cont)
         #Set up data structures for OutputFitsFile
@@ -115,10 +116,9 @@ def main1():
                    "flux": data.y,
                    "continuum": data.cont,
                    "error": data.err}
-        if i == 0:
-          FitsUtils.OutputFitsFileExtensions(columns, original, outfilename, mode="new")
-        else:
-          FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename)
+        column_list.append(columns)
+      FitsUtils.OutputFitsFileExtensions(column_list, original, outfilename, mode="new")
+        
       plt.title(original)
       plt.xlabel("Wavelength (nm)")
       plt.ylabel("Flux")
