@@ -1,3 +1,4 @@
+#!/opt/local/bin/python
 import pyfits
 import sys
 

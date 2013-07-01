@@ -26,13 +26,13 @@ import FindContinuum
   epsilon:     Linear limb darkening parameter
   resolution:  Detector resolution ( lambda/(delta lambda) )
 """
-def FitData(fullmodel, data, vsini, epsilon, resolution, threshold=1.0, vsys=0.0):
+def FitData(fullmodel, data, vsini, epsilon, resolution, threshold=0.99, vsys=0.0, nlines=20, logfilename="fitlog.txt"):
   #First, find the lines in the relevant part of the spectrum
   left = numpy.searchsorted(fullmodel.x, data.x[0])
   right = numpy.searchsorted(fullmodel.x, data.x[-1])
   segment = fullmodel[left:right]
   segment.cont = FittingUtilities.Continuum(segment.x, segment.y, fitorder=15, lowreject=1.5, highreject=10, numiter=10)
-  lines, strengths = FindLines(segment, threshold=threshold, numlines=20)
+  lines, strengths = FindLines(segment, threshold=threshold, numlines=nlines)
   """
   plt.plot(segment.x, segment.y/segment.cont)
   for i in range(len(lines)):
@@ -51,12 +51,41 @@ def FitData(fullmodel, data, vsini, epsilon, resolution, threshold=1.0, vsys=0.0
   pars.append(epsilon)
   pars.append(vsys)
   const_pars.append(resolution)
-  fitpars, success = leastsq(ErrorFunction, pars, args=(const_pars, data))
+  fitout = leastsq(ErrorFunction, pars, args=(const_pars, data), full_output=True)
+  fitpars, neval, message = fitout[0], fitout[2]['nfev'], fitout[3]
+  model_original = ErrorFunction(pars, const_pars, data, return_model=True)
+  pars2 = list(pars)
+  const_pars2 = list(const_pars)
+  pars2[-3] = 0.0
+  const_pars2[-1] = 100000
+  delta_original = ErrorFunction(pars2, const_pars2, data, return_model=True)
   #model = GenerateModel(lines, strengths, data.x, vsini, epsilon, resolution, vsys)
   chisq = numpy.sum(ErrorFunction(fitpars, const_pars, data))/float(data.size() - len(pars))
   model = ErrorFunction(fitpars, const_pars, data, return_model=True)
+  fitpars2 = list(fitpars)
+  fitpars2[-3] = 0.0
+  delta = ErrorFunction(fitpars2, const_pars2, data, return_model=True)
   print "X^2 = %g" %chisq
-  plt.plot(model.x, model.y, 'r-')
+  
+  data.cont = FittingUtilities.Continuum(data.x, data.y/model.y, fitorder=5, lowreject=2, highreject=5)
+
+  #plt.figure(1)
+  #plt.plot(data.x, data.y/data.cont, 'k-')
+  #plt.plot(model_original.x, model_original.y, 'r-')
+  #plt.plot(model.x, model.y, 'g-')
+  #plt.figure(2)
+  #plt.plot(data.x, data.y/data.cont, 'k-')
+  #plt.plot(delta_original.x, delta_original.y, 'r-')
+  #plt.plot(delta.x, delta.y, 'g-')
+  #plt.show()
+
+  #Log
+  logfile = open(logfilename, "a")
+  logfile.write("X^2 = %.3g\nleastsq output message: %s\nNumber of function calls: %i\n" %(chisq, message, neval))
+  logfile.write("Vsini = %.3g\nepsilon = %.3g\n vsys = %.3g\n\n" %(fitpars[-3], fitpars[-2], fitpars[-1]))
+  logfile.close()
+
+  return model
   
   
 def ErrorFunction(pars, const_pars, data, return_model=False):
@@ -72,6 +101,8 @@ def ErrorFunction(pars, const_pars, data, return_model=False):
   epsilon = pars[numlines+1]
   vsys = pars[numlines+2]
   model = GenerateModel(lines, strengths, data.x, vsini, epsilon, resolution, vsys)
+
+  data.cont = FittingUtilities.Continuum(data.x, data.y/model.y, fitorder=5, lowreject=2, highreject=5)
   
   if not return_model:
     return (data.y - model.y*data.cont)**2 / data.err**2
@@ -90,7 +121,8 @@ def GenerateModel(lines, strengths, xgrid, vsini, epsilon, resolution, vsys):
     idx = numpy.searchsorted(model.x, line*(1+vsys/constants.c.cgs.value))
     model.y[idx] = -strengths[i]*factor
   model.y += 1.0
-  model = RotBroad.Broaden2(model.copy(), vsini*units.km.to(units.cm), linear=True, epsilon=epsilon)
+  if vsini > 10.0:
+    model = RotBroad.Broaden2(model.copy(), vsini*units.km.to(units.cm), linear=True, epsilon=epsilon)
   model = MakeModel.ReduceResolution(model, resolution)
   return model
   
@@ -138,25 +170,53 @@ def FindLines(model, threshold=1.0, numlines=10):
   
 if __name__ == "__main__":
   model_dir = "%s/School/Research/Models/Sorted/Stellar/Vband/" %(os.environ["HOME"])
-  modelfile = "%slte86-4.00+0.0-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
+  modelfile = "%slte86-4.00+0.5-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
   threshold = 0.90
   print "Reading file %s" %modelfile
   x, y = numpy.loadtxt(modelfile, usecols=(0,1), unpack=True)
   model = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026, 
                                  y=10**y)
   #model.cont = FittingUtilities.Continuum(model.x, model.y, fitorder=21, lowreject=1.5, highreject=20)
-  
+
+  output_list = []
   for fname in sys.argv[1:]:
+    logfilename = "fitlog_%s.txt" %fname
+    logfile = open(logfilename, "w")
+    logfile.write("Fitting Information file %s\n" %fname)
+    logfile.close()
     orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", errors="error")
-    for order in orders:
+    for ordernum, order in enumerate(orders):
+      print "Order %i" %ordernum
+      if ordernum == 66:
+        continue
       #Linearize
       datafcn = interp(order.x, order.y)
       x = numpy.linspace(order.x[0], order.x[-1], order.size())
       order = DataStructures.xypoint(x=x, y=datafcn(x))
       order.cont = FittingUtilities.Continuum(order.x, order.y)
+      logfile = open(logfilename, "a")
+      logfile.write("\n*****************************\n")
+      logfile.write("Order %i:\n" %ordernum)
+      logfile.write("*****************************\n")
+      logfile.close()
+      model2 = FitData(model, order, 140, 0.6, 60000, nlines=100, logfilename=logfilename)
+
+      plt.figure(1)
       plt.plot(order.x, order.y/order.cont, 'k-')
-      FitData(model, order, 140, 0.6, 60000)
+      plt.plot(model2.x, model2.y, 'r-')
+      plt.figure(2)
+      plt.plot(order.x, order.y/(order.cont*model2.y) )
+
+      #Prepare dictionary for output
+      columns = {"wavelength": order.x,
+                 "flux": order.y/model2.y,
+                 "continuum": order.cont,
+                 "error": order.err}
+      output_list.append(columns)
     plt.show()
+
+    outfilename = "out.fits"
+    FitsUtils.OutputFitsFileExtensions(output_list, fname, outfilename, mode="new")
       
       
       

@@ -1,44 +1,82 @@
-import FitsUtils
 import numpy
 import matplotlib.pyplot as plt
+from scipy.interpolate import InterpolatedUnivariateSpline as interp
+from scipy.optimize import leastsq, brute
+from scipy import mat
+from scipy.linalg import svd, diagsvd
 import sys
+import os
+import FitsUtils
+from collections import defaultdict
+import DataStructures
+from astropy import units, constants
+import MakeModel
+import RotBroad
+import FittingUtilities
+import FindContinuum
+
+
+
+def main(window_size=91, numiters=100, lowreject=3, highreject=3, smoothorder=3):
+  fname = sys.argv[1]
+  orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", errors="error")
+  column_list = []
+  for i, order in enumerate(orders):
+    print "\n\n"
+    done = False
+    x = order.x.copy()
+    y = order.y.copy()
+    indices = numpy.array([True]*x.size)
+    iteration = 0
+    while not done and iteration < numiters:
+      done = True
+      iteration += 1
+      smoothed = FittingUtilities.savitzky_golay(y, window_size, smoothorder)
+      residuals = y/smoothed
+      if iteration == 1:
+        #Save the first and last points, for interpolation
+        first, last = smoothed[0], smoothed[-1]
+      mean = residuals.mean()
+      std = residuals.std()
+      print residuals.size, x.size, y.size
+      #plt.plot((residuals - mean)/std)
+      #plt.show()
+      badindices = numpy.where( numpy.logical_or( (residuals-mean)/std > highreject, (residuals-mean)/std < -lowreject ) )[0]
+      if badindices.size > 1 and y.size - badindices.size > 2*window_size and iteration < numiters:
+        done = False
+        x = numpy.delete(x, badindices)
+        y = numpy.delete(y, badindices)
+
+    print "iter = %i" %iteration
+    if x[0] > order.x[0]:
+      x = numpy.append(numpy.array([order.x[0]]), x)
+      smoothed = numpy.append(numpy.array([first]), smoothed)
+    if x[-1] < order.x[-1]:
+      x = numpy.append(x, numpy.array([order.x[-1]]))
+      smoothed = numpy.append(smoothed, numpy.array([last]))
+    print x.size, y.size, smoothed.size
+    smooth_fcn = interp(x, smoothed, k=1)
+    smoothed = smooth_fcn(order.x)
+
+    order.cont = FittingUtilities.Continuum(order.x, order.y)
+    plt.figure(1)
+    plt.plot(order.x, order.y/order.cont, 'k-')
+    plt.plot(order.x, smoothed/order.cont, 'r-')
+    #plt.figure(2)
+    #plt.plot(order.x, order.y/smoothed)
+    #plt.plot(order.x, smoothed)
+    #orders[i].y /= smoothed
+    column = {"wavelength": order.x,
+              "flux": order.y/smoothed,
+              "continuum": numpy.ones(order.x.size),
+              "error": order.err}
+    column_list.append(column)
+  plt.show()
+  outfilename = "%s_smoothed.fits" %(fname.split(".fits")[0])
+  print "Outputting to %s" %outfilename
+  FitsUtils.OutputFitsFileExtensions(column_list, fname, outfilename, mode='new')
+
 
 
 if __name__ == "__main__":
-  window_len = 100
-  numstd = 2.0
-  numiters = 10
-  for fname in sys.argv[1:]:
-    orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", cont="continuum", errors="error")
-
-    for order in orders:
-      s = numpy.r_[order.y[window_len/2:0:-1], order.y, order.y[-1:-window_len/2:-1]]
-      done = False
-      i = 0
-      while not done and i < numiters:
-        done = True
-        i += 1
-        #w1 = numpy.ones(window_len)
-        w2 = numpy.hanning(window_len)
-        #y1 = numpy.convolve(w1/w1.sum(), s, mode='valid')
-        y2 = numpy.convolve(w2/w2.sum(), s, mode='valid')
-
-        reduced = order.y/y2
-        sigma = numpy.std(reduced)
-        mean = numpy.mean(reduced)
-        badindices = numpy.where((reduced - mean)/sigma < -numstd)[0]
-        #print badindices
-        #plt.plot((reduced - mean)/sigma)
-        #plt.plot(numpy.ones(reduced.size)*-numstd)
-        #plt.show()
-        #inp = raw_input("done")
-        if badindices.size > 0:
-          done = False
-          order.y[badindices] = y2[badindices]
-        
-      #print order.x.size, y.size
-      plt.plot(order.x, order.y, 'k-')
-      #plt.plot(order.x, y1, 'r-')
-      plt.plot(order.x, y2, 'g-')
-      plt.show()
-
+  main(window_size=91, lowreject=5, highreject=5)

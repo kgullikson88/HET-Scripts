@@ -440,8 +440,6 @@ def OutputFitsFileExtensions(column_dicts, template, outfilename, mode="append",
   for i in range(len(column_dicts)):
     column_dict = column_dicts[i]
     header_info = headers_info[i]
-    if not isinstance(column_dicts, list):
-      header_info= [header_info, ]
     columns = []
     for key in column_dict.keys():
       columns.append(pyfits.Column(name=key, format="D", array=column_dict[key]))
