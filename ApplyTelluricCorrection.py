@@ -56,6 +56,9 @@ def Correct(original, corrected, offset=None):
     elif model.size() > data.size():
       sys.exit("Error! Model size (%i) is larger than data size (%i)" %(model.size(), data.size()))
 
+    badindices = numpy.where(numpy.logical_or(data.y <= 0, model.y < 0.05))[0]
+    model.y[badindices] = data.y[badindices]
+    
     data.y /= model.y
     original_orders[i] = data.copy()
   return original_orders

@@ -17,8 +17,7 @@ import FindContinuum
 
 
 
-def main(window_size=91, numiters=100, lowreject=3, highreject=3, smoothorder=3):
-  fname = sys.argv[1]
+def Smooth(fname, window_size=91, numiters=100, lowreject=3, highreject=3, smoothorder=3):
   orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", errors="error")
   column_list = []
   for i, order in enumerate(orders):
@@ -79,4 +78,5 @@ def main(window_size=91, numiters=100, lowreject=3, highreject=3, smoothorder=3)
 
 
 if __name__ == "__main__":
-  main(window_size=91, lowreject=5, highreject=5)
+  for fname in sys.argv[1:]:
+    Smooth(fname, window_size=91, lowreject=5, highreject=5)
