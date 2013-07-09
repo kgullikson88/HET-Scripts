@@ -231,8 +231,11 @@ if __name__ == "__main__":
           order2.y = (order2.y/order2.cont + model_fcn(order2.x))
 
           #Smooth data in the same way I would normally
-          smoothed =  FittingUtilities.savitzky_golay(order2.y, 91, 5)
-          reduceddata = order2.y/smoothed
+          #smoothed =  FittingUtilities.savitzky_golay(order2.y, 91, 5)
+          #reduceddata = order2.y/smoothed
+          vsini = 100.0
+          reduceddata = FittingUtilities.HighPassFilter(order2, vsini*units.km.to(units.cm))
+          
 
           #Do the cross-correlations
           reducedmodel = model3.y/model3.cont

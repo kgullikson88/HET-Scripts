@@ -104,6 +104,7 @@ def MakePlot(infilename):
     infiles = [infilename,]
 
   #Set up dictionaries/lists
+  p_spt = defaultdict(list)       #Primary spectral type
   s_spt = defaultdict(list)       #Secondary spectral type
   p_mass = defaultdict(list)      #Primary mass
   s_mass = defaultdict(list)      #Secondary mass
@@ -149,13 +150,14 @@ def MakePlot(infilename):
       if float(segments[2]) != current_temp or iternum == 0:
         if iternum != 0:
           #We are on to the next temperature. Save info!
-          s_spt[p_spt].append(s_spectype)
-          p_mass[p_spt].append(sec_mass/massratio)
-          s_mass[p_spt].append(sec_mass)
-          q[p_spt].append(massratio)
-          det_rate[p_spt].append(detections/numsamples)
-          sig[p_spt].append(numpy.mean(significance))
-          magdiff[p_spt].append(2.5*numpy.log10(fluxratio))
+          s_spt[starname].append(s_spectype)
+          p_spt[starname].append(p_spectype)
+          p_mass[starname].append(sec_mass/massratio)
+          s_mass[starname].append(sec_mass)
+          q[starname].append(massratio)
+          det_rate[starname].append(detections/numsamples)
+          sig[starname].append(numpy.mean(significance))
+          magdiff[starname].append(2.5*numpy.log10(fluxratio))
 
           #Reset things
           current_temp = float(segments[2])
@@ -165,8 +167,8 @@ def MakePlot(infilename):
 
         #Figure out the time-consuming SpectralType calls
         T1 = float(segments[1])
-        p_spt = MS.GetSpectralType(MS.Temperature, T1)
-        R1 = MS.Interpolate(MS.Radius, p_spt)
+        p_spectype = MS.GetSpectralType(MS.Temperature, T1)
+        R1 = MS.Interpolate(MS.Radius, p_spectype)
         T2 = float(segments[2])
         s_spectype = MS.GetSpectralType(MS.Temperature, T2)
         R2 = MS.Interpolate(MS.Radius, s_spectype)
@@ -188,18 +190,21 @@ def MakePlot(infilename):
     print "Plotting now"
     spt_sorter = {"O": 1, "B": 2, "A": 3, "F": 4, "G": 5, "K": 6, "M": 7}
     fcn = lambda s: (spt_sorter[itemgetter(0)(s)], itemgetter(1)(s))
-    print sorted(s_spt.keys(), key=fcn)
-    for p_spt in sorted(s_spt.keys(), key=fcn):
-      x = namedict[xaxis][p_spt]
-      y = namedict[yaxis][p_spt]
+    #print sorted(s_spt.keys(), key=fcn)
+    #for starname in sorted(s_spt.keys(), key=fcn):
+    print sorted(s_spt.keys())
+    for starname in sorted(s_spt.keys()):
+      p_spectype = p_spt[starname]
+      x = namedict[xaxis][starname]
+      y = namedict[yaxis][starname]
       if "SpectralType" in xaxis:
-        plt.plot(range(len(x)), y[::-1], linestyle=next(linecycler), linewidth=2, label="%s (%s)" %(starname, p_spt))
+        plt.plot(range(len(x)), y[::-1], linestyle=next(linecycler), linewidth=2, label="%s (%s)" %(starname, p_spectype[0]))
         plt.xticks(range(len(x)), x[::-1], size="small")
       elif "SpectralType" in yaxis:
-        plt.plot(x[::-1], range(len(y)), linestyle=next(linecycler), linewidth=2, label="%s (%s)" %(starname, p_spt))
+        plt.plot(x[::-1], range(len(y)), linestyle=next(linecycler), linewidth=2, label="%s (%s)" %(starname, p_spectype[0]))
         plt.yticks(range(len(y)), y[::-1], size="small")
       else:
-        plt.plot(x, y, linestyle=next(linecycler), linewidth=2, label="%s (%s)" %(starname, p_spt))
+        plt.plot(x, y, linestyle=next(linecycler), linewidth=2, label="%s (%s)" %(starname, p_spectype[0]))
         if "Magnitude" in xaxis:
           ax = plt.gca()
           ax.set_xlim(ax.get_xlim()[::-1])
@@ -209,13 +214,23 @@ def MakePlot(infilename):
       plt.legend(loc='best')
       plt.xlabel(labeldict[xaxis])
       plt.ylabel(labeldict[yaxis])
-      plt.title("Sensitivity for "+p_spt+" Primary")
+      plt.title("Sensitivity Analysis")
     
   plt.show()
 
 
 
 if __name__ == "__main__":
-  #MakeSummaryFile("Sensitivity/", "HIP_70384_telluric_corrected", outfilename="Sensitivity/logfile2.txt")
-  MakePlot("Sensitivity/logfile2.txt")
-  
+  if any(["new" in f for f in sys.argv[1:]]):
+    allfiles = [f for f in os.listdir("Sensitivity/") if (f.startswith("HIP") or f.startswith("HR"))]
+    prefixes = []
+    for fname in allfiles:
+      prefix = fname.split("_v")[0][:-6]
+      if prefix not in prefixes:
+        print "New prefix: %s" %prefix
+        prefixes.append(prefix)
+    for i, prefix in enumerate(prefixes):
+      MakeSummaryFile("Sensitivity/", prefix, outfilename="Sensitivity/logfile%i.txt" %(i+1))
+      MakePlot("Sensitivity/logfile%i.txt" %(i+1))
+  else:
+    MakePlot("Sensitivity/logfile.dat")

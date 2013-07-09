@@ -61,8 +61,8 @@ def Smooth(fname, window_size=91, numiters=100, lowreject=3, highreject=3, smoot
     plt.figure(1)
     plt.plot(order.x, order.y/order.cont, 'k-')
     plt.plot(order.x, smoothed/order.cont, 'r-')
-    #plt.figure(2)
-    #plt.plot(order.x, order.y/smoothed)
+    plt.figure(2)
+    plt.plot(order.x, order.y/smoothed)
     #plt.plot(order.x, smoothed)
     #orders[i].y /= smoothed
     column = {"wavelength": order.x,
@@ -79,4 +79,4 @@ def Smooth(fname, window_size=91, numiters=100, lowreject=3, highreject=3, smoot
 
 if __name__ == "__main__":
   for fname in sys.argv[1:]:
-    Smooth(fname, window_size=91, lowreject=5, highreject=5)
+    Smooth(fname, window_size=301, smoothorder=5, lowreject=10, highreject=10)
