@@ -222,7 +222,8 @@ def MakePlot(infilename):
 
 if __name__ == "__main__":
   if any(["new" in f for f in sys.argv[1:]]):
-    allfiles = [f for f in os.listdir("Sensitivity/") if (f.startswith("HIP") or f.startswith("HR"))]
+    directory = "Sensitivity/"
+    allfiles = [f for f in os.listdir(directory) if (f.startswith("HIP") or f.startswith("HR"))]
     prefixes = []
     for fname in allfiles:
       prefix = fname.split("_v")[0][:-6]
@@ -230,7 +231,7 @@ if __name__ == "__main__":
         print "New prefix: %s" %prefix
         prefixes.append(prefix)
     for i, prefix in enumerate(prefixes):
-      MakeSummaryFile("Sensitivity/", prefix, outfilename="Sensitivity/logfile%i.txt" %(i+1))
-      MakePlot("Sensitivity/logfile%i.txt" %(i+1))
+      MakeSummaryFile(directory, prefix, outfilename="%slogfile%i.txt" %(directory, i+1))
+      MakePlot("%slogfile%i.txt" %(directory, i+1))
   else:
     MakePlot("Sensitivity/logfile.dat")

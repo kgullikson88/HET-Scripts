@@ -77,13 +77,23 @@ def HighPass():
       linear.err = errorfcn(linear.x)
       linear.cont = FittingUtilities.Continuum(linear.x, linear.y)
       smoothed = FittingUtilities.HighPassFilter(linear, vsini*units.km.to(units.cm))
+      mean = numpy.mean(smoothed)
+      std = numpy.std(smoothed)
+      badindices = numpy.where(numpy.abs((smoothed-mean)/std > 3.0))[0]
+      plt.figure(2)
+      plt.plot(linear.x, (smoothed-mean)/std)
+      plt.figure(3)
+      plt.plot(linear.x, linear.y-smoothed)
+      plt.figure(1)
+      smoothed[badindices] = 0.0
       smoothed += numpy.median(linear.cont)
       smoothed /= numpy.median(linear.cont)
+      #linear.y[badindices] = smoothed[badindices]
       mainaxis.plot(linear.x, linear.y/linear.cont, 'k-')
       mainaxis.plot(linear.x, smoothed, 'r-', linewidth=1)
       reducedaxis.plot(linear.x, smoothed)
       columns = {"wavelength": linear.x,
-                 "flux": linear.y,
+                 "flux": smoothed,
                  "error": linear.err,
                  "continuum": FittingUtilities.Continuum(linear.x, linear.y, fitorder=3, lowreject=3, highreject=3)}
       column_list.append(columns)

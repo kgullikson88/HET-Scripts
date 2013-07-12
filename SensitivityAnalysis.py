@@ -2,6 +2,7 @@
 import FitsUtils
 import numpy
 from scipy.interpolate import InterpolatedUnivariateSpline as interp
+import scipy.signal
 import os
 import sys
 import DataStructures
@@ -104,6 +105,7 @@ for fname in model_list:
   temp_list.append(temp)
   gravity_list.append(gravity)
   metal_list.append(metallicity)
+
 
   
 
@@ -233,11 +235,23 @@ if __name__ == "__main__":
           #Smooth data in the same way I would normally
           #smoothed =  FittingUtilities.savitzky_golay(order2.y, 91, 5)
           #reduceddata = order2.y/smoothed
-          vsini = 100.0
-          reduceddata = FittingUtilities.HighPassFilter(order2, vsini*units.km.to(units.cm))
-          
+          vsini = 60.0
+          order2.x, order2.y = FittingUtilities.HighPassFilter(order2, vsini*units.km.to(units.cm), linearize=True)
+          #x, reduceddata = FittingUtilities.HighPassFilter(order2, vsini*units.km.to(units.cm), linearize=True)
+          #filterfcn = interp(x, reduceddata)
+          #reduceddata = filterfcn(order2.x)
+          #plt.plot(order2.x, order2.y)
+          #plt.plot(order2.x, reduceddata+2)
+          #plt.show()
+          #model3.x, model3.y = FittingUtilities.HighPassFilter(model3, vsini*units.km.to(units.cm), linearize=True)
+          #x, reducedmodel = FittingUtilities.HighPassFilter(model3, vsini*units.km.to(units.cm), linearize=True)
+          #plt.plot(model3.x, model3.y/model3.cont)
+          #plt.plot(x, reducedmodel/model3.cont+1)
+          #plt.show()
 
           #Do the cross-correlations
+          reducedmodel = model3.y
+          reduceddata = order2.y
           reducedmodel = model3.y/model3.cont
           meandata = reduceddata.mean()
           meanmodel = reducedmodel.mean()
@@ -250,7 +264,7 @@ if __name__ == "__main__":
           #plt.plot(order2.x, reduceddata - meandata)
           #plt.plot(model2.x, reducedmodel - meanmodel)
           #plt.show()
-          ycorr = numpy.correlate(reduceddata - meandata, reducedmodel - meanmodel, mode='valid')
+          ycorr = scipy.signal.fftconvolve(reduceddata - meandata, (reducedmodel - meanmodel)[::-1], mode='valid')
           xcorr = numpy.arange(ycorr.size)
           lags = xcorr - (model2.x.size + order2.x.size + delta - 1.0)/2.0
           lags = xcorr - right
@@ -262,9 +276,9 @@ if __name__ == "__main__":
           right = numpy.searchsorted(velocity, +1000)
           corr = DataStructures.xypoint(right - left + 1)
           corr.x = velocity[left:right]
-          corr.y = ycorr[left:right]/(data_rms*model_rms)
+          corr.y = ycorr[left:right]/(data_rms*model_rms) * scale
           corrlist.append(corr.copy())
-          normalization += 1.0
+          normalization += 1.0 * scale
 
         #Add up the individual CCFs
         master_corr = corrlist[0]
