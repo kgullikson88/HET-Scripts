@@ -212,8 +212,8 @@ if __name__ == "__main__":
       order.err = ERROR(order.x)
 
       #Only use the middle half of each order (lots of noise on the edges)
-      left = order.size()/4.0
-      right = order.size()*3.0/4.0
+      left = int(order.size()/4.0)
+      right = int(order.size()*3.0/4.0 + 0.5)
       order = order[left:right]
       
       #Remove bad regions from the data
