@@ -9,6 +9,7 @@ import FindContinuum
 import matplotlib.pyplot as plt
 #import Units
 from astropy import units, constants
+import FittingUtilities
 
 
 homedir = os.environ["HOME"]

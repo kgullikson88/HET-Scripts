@@ -116,6 +116,7 @@ if __name__ == "__main__":
   extensions=True
   tellurics=False
   trimsize = 100
+  windowsize = 91
   MS = SpectralTypeRelations.MainSequence()
   vel_list = range(-400, 400, 50)
   outdir = "Sensitivity/"
@@ -170,7 +171,7 @@ if __name__ == "__main__":
         order.err = numpy.delete(order.err, numpy.arange(left, right))
 
       #Remove whole order if it is too small
-      if order.x.size > 10:
+      if order.x.size > windowsize:
         order.cont = FittingUtilities.Continuum(order.x, order.y, lowreject=3, highreject=3)
         orders_original[numorders -1 -i] = order.copy()
       else:
@@ -239,7 +240,7 @@ if __name__ == "__main__":
           order2.y = (order2.y/order2.cont + model_fcn(order2.x))
 
           #Smooth data in the same way I would normally
-          smoothed =  FittingUtilities.savitzky_golay(order2.y, 91, 5)
+          smoothed =  FittingUtilities.savitzky_golay(order2.y, windowsize, 5)
           reduceddata = order2.y/smoothed
           #vsini = 60.0
           #order2.x, order2.y = FittingUtilities.HighPassFilter(order2, vsini*units.km.to(units.cm), linearize=True)
