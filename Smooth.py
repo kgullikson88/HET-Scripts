@@ -63,11 +63,13 @@ def Smooth(fname, window_size=91, numiters=100, lowreject=3, highreject=3, smoot
     plt.plot(order.x, smoothed/order.cont, 'r-')
     plt.figure(2)
     plt.plot(order.x, order.y/smoothed)
+    plt.figure(3)
+    plt.plot(order.x, order.y - smoothed)
     #plt.plot(order.x, smoothed)
     #orders[i].y /= smoothed
     column = {"wavelength": order.x,
-              "flux": order.y/smoothed,
-              "continuum": numpy.ones(order.x.size),
+              "flux": (order.y-smoothed) + order.cont.mean(),
+              "continuum": numpy.ones(order.x.size)*order.cont.mean(),
               "error": order.err}
     column_list.append(column)
   plt.show()

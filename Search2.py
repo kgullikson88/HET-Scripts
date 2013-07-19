@@ -210,6 +210,11 @@ if __name__ == "__main__":
       order.y = DATA(order.x)
       order.cont = CONT(order.x)
       order.err = ERROR(order.x)
+
+      #Only use the middle half of each order (lots of noise on the edges)
+      left = order.size()/4.0
+      right = order.size()*3.0/4.0
+      order = order[left:right]
       
       #Remove bad regions from the data
       for region in badregions:
@@ -234,6 +239,10 @@ if __name__ == "__main__":
       plt.show()
     sys.exit()
     """
+
+    #Smooth data
+    for order in orders:
+      order.y /= FittingUtilities.savitzky_golay(order2.y, 91, 5)
     
     output_dir = "Cross_correlations/"
     outfilebase = fname.split(".fits")[0]

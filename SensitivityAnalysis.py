@@ -64,7 +64,8 @@ model_list = [ modeldir + "lte30-4.00-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.s
                modeldir + "lte57-4.00-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted",
                modeldir + "lte58-4.50-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted",
                modeldir + "lte59-4.50-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted",
-               modeldir + "lte60-4.50-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted",
+               modeldir + "lte60-4.50-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted"]
+""",
                modeldir + "lte61-4.50-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted",
                modeldir + "lte62-4.50-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted",
                modeldir + "lte63-4.50-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted",
@@ -81,7 +82,7 @@ model_list = [ modeldir + "lte30-4.00-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.s
                modeldir + "lte74-4.00-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted",
                modeldir + "lte74-4.50-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted",
                modeldir + "lte76-4.50-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted",
-               modeldir + "lte78-4.50-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted"]
+               modeldir + "lte78-4.50-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted"]"""
    
                
 star_list = []
@@ -153,6 +154,11 @@ if __name__ == "__main__":
       order.y = DATA(order.x)
       order.cont = CONT(order.x)
       order.err = ERROR(order.x)
+
+      #Only use the middle half of each order (lots of noise on the edges)
+      left = order.size()/4.0
+      right = order.size()*3.0/4.0
+      order = order[left:right]
       
       #Remove bad regions from the data
       for region in badregions:
@@ -233,10 +239,10 @@ if __name__ == "__main__":
           order2.y = (order2.y/order2.cont + model_fcn(order2.x))
 
           #Smooth data in the same way I would normally
-          #smoothed =  FittingUtilities.savitzky_golay(order2.y, 91, 5)
-          #reduceddata = order2.y/smoothed
-          vsini = 60.0
-          order2.x, order2.y = FittingUtilities.HighPassFilter(order2, vsini*units.km.to(units.cm), linearize=True)
+          smoothed =  FittingUtilities.savitzky_golay(order2.y, 91, 5)
+          reduceddata = order2.y/smoothed
+          #vsini = 60.0
+          #order2.x, order2.y = FittingUtilities.HighPassFilter(order2, vsini*units.km.to(units.cm), linearize=True)
           #x, reduceddata = FittingUtilities.HighPassFilter(order2, vsini*units.km.to(units.cm), linearize=True)
           #filterfcn = interp(x, reduceddata)
           #reduceddata = filterfcn(order2.x)
@@ -251,7 +257,7 @@ if __name__ == "__main__":
 
           #Do the cross-correlations
           reducedmodel = model3.y
-          reduceddata = order2.y
+          #reduceddata = order2.y
           reducedmodel = model3.y/model3.cont
           meandata = reduceddata.mean()
           meanmodel = reducedmodel.mean()
