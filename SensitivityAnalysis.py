@@ -148,18 +148,17 @@ if __name__ == "__main__":
     #Loop over orders, removing bad parts
     numorders = len(orders_original)
     for i, order in enumerate(orders_original[::-1]):
+      #Only use the middle half of each order (lots of noise on the edges)
       DATA = interp(order.x, order.y)
       CONT = interp(order.x, order.cont)
       ERROR = interp(order.x, order.err)
-      order.x = numpy.linspace(order.x[trimsize], order.x[-trimsize], order.size() - 2*trimsize)
+      left = int(order.size()/4.0)
+      right = int(order.size()*3.0/4.0 + 0.5)
+      order.x = numpy.linspace(order.x[left], order.x[right],right - left + 1)
       order.y = DATA(order.x)
       order.cont = CONT(order.x)
       order.err = ERROR(order.x)
 
-      #Only use the middle half of each order (lots of noise on the edges)
-      left = int(order.size()/4.0)
-      right = int(order.size()*3.0/4.0 + 0.5)
-      order = order[left:right]
       
       #Remove bad regions from the data
       for region in badregions:

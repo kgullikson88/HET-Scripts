@@ -183,11 +183,14 @@ if __name__ == "__main__":
   extensions=True
   tellurics=False
   trimsize = 100
+  smooth = False
   for arg in sys.argv[1:]:
     if "-e" in arg:
       extensions=False
     if "-t" in arg:
       tellurics=True  #telluric lines modeled but not removed
+    if "-s" in arg:
+      smooth = True
     else:
       fileList.append(arg)
 
@@ -204,18 +207,17 @@ if __name__ == "__main__":
       orders = FitsUtils.MakeXYpoints(fname, errors=2)
     numorders = len(orders)
     for i, order in enumerate(orders[::-1]):
+      #Only use the middle half of each order (lots of noise on the edges)
       DATA = interp(order.x, order.y)
       CONT = interp(order.x, order.cont)
       ERROR = interp(order.x, order.err)
-      order.x = numpy.linspace(order.x[trimsize], order.x[-trimsize], order.size() - 2*trimsize)
+      left = int(order.size()/4.0)
+      right = int(order.size()*3.0/4.0 + 0.5)
+      order.x = numpy.linspace(order.x[left], order.x[right], right - left + 1)
       order.y = DATA(order.x)
       order.cont = CONT(order.x)
       order.err = ERROR(order.x)
 
-      #Only use the middle half of each order (lots of noise on the edges)
-      left = int(order.size()/4.0)
-      right = int(order.size()*3.0/4.0 + 0.5)
-      order = order[left:right]
       
       #Remove bad regions from the data
       for region in badregions:
@@ -242,8 +244,9 @@ if __name__ == "__main__":
     """
 
     #Smooth data
-    for order in orders:
-      order.y /= FittingUtilities.savitzky_golay(order2.y, 91, 5)
+    if smooth:
+      for order in orders:
+        order.y /= FittingUtilities.savitzky_golay(order.y, 91, 5)
     
     output_dir = "Cross_correlations/"
     outfilebase = fname.split(".fits")[0]
