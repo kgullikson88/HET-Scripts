@@ -121,6 +121,21 @@ def main2(modelfile, threshold=0.8, reverse=False, xfactor=1.0, yfactor=1.0, unl
           
       points = [int(line),]
 
+  #Make sure no lines are really close to other ones
+  for i in range(len(lines)-2, -1, -1):
+    line = lines[i]
+    after = lines[i+1]
+    if numpy.abs(line - after) < 0.03:
+      #Find the stronger line
+      if strengths[i] > strengths[i+1]:
+        lines.pop(i+1)
+        strengths.pop(i+1)
+      else:
+        lines.pop(i)
+        strengths.pop(i)
+        
+    
+
       
   plt.plot(model.x, model.y/model.cont, 'k-')
   for line in lines:
