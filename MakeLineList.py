@@ -7,6 +7,7 @@ import os
 import FittingUtilities
 from astropy import units, constants
 import DataStructures
+import sys
 
 
 bclength = 1000  #Boxcar smoothing length
@@ -74,20 +75,16 @@ def main1():
 
 
 
-def main2():
-  model_dir = "%s/School/Research/Models/Sorted/Stellar/Vband/" %(os.environ["HOME"])
-  modelfile = "%slte86-4.00-0.5-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
-  threshold = 0.80
-  print "Reading stellar model"
+def main2(modelfile, threshold=0.8, reverse=False, xfactor=1.0, yfactor=1.0, unlog=False):
+  print "Reading model"
   x,y = numpy.loadtxt(modelfile, usecols=(0,1), unpack=True)
-  x *= units.angstrom.to(units.nm)/1.00026
-  y = 10**y
+  if reverse:
+    x = x[::-1]*xfactor
+    y = y[::-1]*yfactor
+  if unlog:
+    y = 10**y
   model = DataStructures.xypoint(x=x, y=y)
   model.cont = FittingUtilities.Continuum(model.x, model.y, fitorder=15, lowreject=1.5, highreject=20)
-  plt.plot(model.x, model.y)
-  plt.plot(model.x, model.cont)
-  plt.show()
-
   
 
   print "Finding lines"
@@ -123,34 +120,7 @@ def main2():
           
       points = [int(line),]
 
-      """
-      if len(points) > 1:
-        minindex = (model.y[points[0]:points[-1]] / model.cont[points[0]:points[-1]]).argmin() + points[0]
-      else:
-        minindex = points[0]
-      lines.append(model.x[minindex])
-      yval = model.y[minindex] / model.cont[minindex]
-      print yval, slope[minindex]
-      strengths.append(yval)
-      points = [int(line),]
-      """
-
-  """
-  #Make sure there are no points too close to each other
-  tol = 0.05
-  lines = sorted(lines)
-  for i in range(len(lines) - 2, 0, -1):
-    if numpy.abs(lines[i] - lines[i-1]) < tol:
-      del lines[i]
-      del lines[i-1]
-    elif numpy.abs(lines[i] - lines[i+1]) < tol:
-      del lines[i+1]
-      del lines[i]
-    else:
-      index = numpy.searchsorted(x,lines[i]) - 1
-      yval = trans[index]
-      plt.plot((lines[i], lines[i]), (yval-0.05, yval-0.1), 'r-')
-  """
+      
   plt.plot(model.x, model.y/model.cont, 'k-')
   for line in lines:
     idx = numpy.searchsorted(model.x, line)
@@ -163,4 +133,9 @@ def main2():
   
 
 if __name__ == "__main__":
-  main2()
+  model_dir = "%s/School/Research/Models/Sorted/Stellar/Vband/" %(os.environ["HOME"])
+  modelfile = "%slte86-4.00-0.5-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
+  if len(sys.argv)>1:
+    modelfile = sys.argv[1]
+  main2(modelfile, threshold=0.95, reverse=True)
+
