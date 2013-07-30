@@ -75,7 +75,7 @@ def main1():
 
 
 
-def main2(modelfile, threshold=0.8, reverse=False, xfactor=1.0, yfactor=1.0, unlog=False):
+def main2(modelfile, threshold=0.8, reverse=False, xfactor=1.0, yfactor=1.0, unlog=False, fitcontinuum=False, fitorder=3):
   print "Reading model"
   x,y = numpy.loadtxt(modelfile, usecols=(0,1), unpack=True)
   if reverse:
@@ -84,7 +84,8 @@ def main2(modelfile, threshold=0.8, reverse=False, xfactor=1.0, yfactor=1.0, unl
   if unlog:
     y = 10**y
   model = DataStructures.xypoint(x=x, y=y)
-  model.cont = FittingUtilities.Continuum(model.x, model.y, fitorder=15, lowreject=1.5, highreject=20)
+  if fitcontinuum:
+    model.cont = FittingUtilities.Continuum(model.x, model.y, fitorder=fitorder, lowreject=1.5, highreject=20)
   
 
   print "Finding lines"
