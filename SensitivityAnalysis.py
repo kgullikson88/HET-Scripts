@@ -239,9 +239,11 @@ if __name__ == "__main__":
           order2.y = (order2.y/order2.cont + model_fcn(order2.x))
 
           #Smooth data in the same way I would normally
-          smoothed =  FittingUtilities.savitzky_golay(order2.y, windowsize, 5)
-          reduceddata = order2.y/smoothed
-          #vsini = 60.0
+          #smoothed =  FittingUtilities.savitzky_golay(order2.y, windowsize, 5)
+          #reduceddata = order2.y/smoothed
+          reduceddata = order2.y
+
+	  #vsini = 60.0
           #order2.x, order2.y = FittingUtilities.HighPassFilter(order2, vsini*units.km.to(units.cm), linearize=True)
           #x, reduceddata = FittingUtilities.HighPassFilter(order2, vsini*units.km.to(units.cm), linearize=True)
           #filterfcn = interp(x, reduceddata)

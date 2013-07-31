@@ -127,7 +127,7 @@ def main2(modelfile, threshold=0.8, reverse=False, xfactor=1.0, yfactor=1.0, unl
     after = lines[i+1]
     if numpy.abs(line - after) < 0.03:
       #Find the stronger line
-      if strengths[i] > strengths[i+1]:
+      if strengths[i] < strengths[i+1]:
         lines.pop(i+1)
         strengths.pop(i+1)
       else:
@@ -153,5 +153,5 @@ if __name__ == "__main__":
   modelfile = "%slte86-4.00-0.5-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
   if len(sys.argv)>1:
     modelfile = sys.argv[1]
-  main2(modelfile, threshold=0.95, reverse=True)
+  main2(modelfile, threshold=0.98, reverse=True)
 
