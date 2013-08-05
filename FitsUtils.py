@@ -111,8 +111,8 @@ def MakeXYpoints(datafile, errors=False, extensions=False, x=None, y=None, cont=
     for key in sorted(header.keys()):
       if "WAT1" in key:
         if "label=Wavelength"  in header[key] and "units" in header[key]:
-          units = header[key].split("units=")[-1]
-          if units == "angstroms" or units == "Angstroms":
+          waveunits = header[key].split("units=")[-1]
+          if waveunits == "angstroms" or waveunits == "Angstroms":
             #wave_factor = Units.nm/Units.angstrom
             wave_factor = units.angstrom.to(units.nm)
 	    print "Wavelength units are Angstroms. Scaling wavelength by ", wave_factor

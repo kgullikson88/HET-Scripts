@@ -28,6 +28,7 @@ if __name__ == "__main__":
   #If we get this far, all is well. Add each order indidually
   numorders = numorders[0]
   outfilename = "Total.fits"
+  column_list = []
   for i in range(numorders):
     total = all_data[0][i].copy()
     total.err = total.err**2
@@ -45,13 +46,13 @@ if __name__ == "__main__":
                "continuum": total.cont,
                "error": total.err}
 
-    if i == 0:
-      FitsUtils.OutputFitsFileExtensions(columns, fileList[0], outfilename, mode="new")
-    else:
-      FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, mode="append")
-    
+    column_list.append(columns)
     pylab.plot(total.x, total.y)
     pylab.plot(total.x, total.cont)
-
   pylab.show()
+  
+  
+  FitsUtils.OutputFitsFileExtensions(column_list, fileList[0], outfilename, mode="new")
+    
+
     

@@ -35,6 +35,7 @@ if __name__ == "__main__":
         print "Error! blaze file %s does not exist!" %blazefile
         print "Not converting file %s" %fname
         continue
+    column_list = []
     for i, order in enumerate(orders):
       #This data is weird. Some parts of the extracted spectra have 0 flux on the edges
       goodindices = numpy.where(order.y > 1e-4)[0]
@@ -58,11 +59,14 @@ if __name__ == "__main__":
                            "flux": order.y,
                            "continuum": order.cont,
                            "error": order.err}
-
+      column_list.append(columns)
       
+    FitsUtils.OutputFitsFileExtensions(column_list, fname, outfilename, mode="new")
+
+    """
       if i == 0:
         FitsUtils.OutputFitsFileExtensions(columns, fname, outfilename, mode="new")
       else:
         FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, mode="append")
-      
+    """
       
