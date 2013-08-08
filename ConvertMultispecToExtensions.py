@@ -63,10 +63,4 @@ if __name__ == "__main__":
       
     FitsUtils.OutputFitsFileExtensions(column_list, fname, outfilename, mode="new")
 
-    """
-      if i == 0:
-        FitsUtils.OutputFitsFileExtensions(columns, fname, outfilename, mode="new")
-      else:
-        FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, mode="append")
-    """
       
