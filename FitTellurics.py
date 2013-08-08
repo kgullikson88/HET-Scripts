@@ -21,7 +21,7 @@ if __name__ == "__main__":
   #Initialize fitter
   fitter = TelluricFitter.TelluricFitter()
   fitter.SetTelluricLineListFile(linelist)
-  LineList = numpy.loadtxt(linelist)
+  LineList = numpy.loadtxt(linelist, usecols=(0,))
   logfile = open("fitlog.txt", "w")
  
   fileList = []
