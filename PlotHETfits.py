@@ -22,6 +22,7 @@ if __name__ == "__main__":
     orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", cont="continuum", errors="error")
     print fname, len(orders)
     plt.figure(fnum)
+    plt.title(fname)
     if tellurics:
       model = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="model")
     for i, order in enumerate(orders):

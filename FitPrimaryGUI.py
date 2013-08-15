@@ -17,7 +17,7 @@ import FittingUtilities
 
 
 class LineFitter:
-  def __init__(self, infilename, telluricfile = "/Users/kgulliks/School/Research/aerlbl_v12.2/rundir2/OutputModels/transmission-792.30-290.93-45.0-7.4-368.50-4.00-10.00-1.50", telluric=False, default_windowsize=100):
+  def __init__(self, infilename, telluricfile = "/Users/kgulliks/School/Research/aerlbl_v12.2/rundir2/OutputModels/transmission-792.30-290.93-45.0-7.4-368.50-4.00-10.00-1.50", telluric=False, default_windowsize=200):
 
     
     print "Reading data"

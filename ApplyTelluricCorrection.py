@@ -58,6 +58,10 @@ def Correct(original, corrected, offset=None):
 
     badindices = numpy.where(numpy.logical_or(data.y <= 0, model.y < 0.05))[0]
     model.y[badindices] = data.y[badindices]
+
+    plt.plot(data.x, data.y/data.cont, 'k-')
+    plt.plot(model.x, model.y, 'r-')
+    plt.show()
     
     data.y /= model.y
     original_orders[i] = data.copy()

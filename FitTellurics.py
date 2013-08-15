@@ -19,7 +19,7 @@ telluric_orders = [3,4,5,6,8,9,10,11,13,14,15,16,17,19,20,24,25]
 
 if __name__ == "__main__":
   #Initialize fitter
-  fitter = TelluricFitter.TelluricFitter()
+  fitter = TelluricFitter.TelluricFitter(debug=True, debug_level=3)
   fitter.SetTelluricLineListFile(linelist)
   LineList = numpy.loadtxt(linelist, usecols=(0,))
   logfile = open("fitlog.txt", "w")
@@ -80,6 +80,7 @@ if __name__ == "__main__":
     angle = float(header["ZD"])
     resolution = 60000.0
     humidity = RH[bestindex]
+    humidity = 90.0
     T_fahrenheit = T[bestindex]
     pressure = P[bestindex]*Units.hPa/Units.inch_Hg
     pressure = ( float(header["BAROMSTR"]) + float(header["BAROMEND"]) ) /2.0
@@ -92,7 +93,7 @@ if __name__ == "__main__":
                         "temperature": temperature,
                         "pressure": pressure,
                         "resolution": resolution})
-    fitter.SetBounds({"h2o": [1.0, 96.0],
+    fitter.SetBounds({"h2o": [1.0, 99.0],
                       "o2": [5e4, 1e6],
                       "resolution": [resolution/2.0, resolution*2.0]})
     models = []
@@ -121,9 +122,6 @@ if __name__ == "__main__":
       #fitter.ImportData(order) #Re-initialize to original data before fitting
       left = numpy.searchsorted(test_model.x, order.x[0])
       right = numpy.searchsorted(test_model.x, order.x[-1])
-      print test_model.x
-      print order.x
-      print left, right
       
       model = DataStructures.xypoint(x=test_model.x[left:right], y=test_model.y[left:right])
       model_amplitude = 1.0 - min(model.y)
