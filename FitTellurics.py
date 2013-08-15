@@ -21,6 +21,7 @@ if __name__ == "__main__":
   #Initialize fitter
   fitter = TelluricFitter.TelluricFitter(debug=True, debug_level=3)
   fitter.SetTelluricLineListFile(linelist)
+  fitter.SetObservatory("McDonald")
   LineList = numpy.loadtxt(linelist, usecols=(0,))
   logfile = open("fitlog.txt", "w")
  
@@ -134,7 +135,7 @@ if __name__ == "__main__":
         model = fitter.GenerateModel(fitpars, LineList)
         #model = DataStructures.xypoint(x=order.x.copy(), y=numpy.ones(order.x.size))
         primary = model.copy()
-      elif model_amplitude >= 0.01 and model_amplitude < 0.1:
+      elif model_amplitude >= 0.01 and model_amplitude < 1:
         logfile.write("Fitting order %i with guassian line profiles\n" %(i+start)) 
         print "Fitting line profiles with gaussian profile"
 	try:
