@@ -199,6 +199,7 @@ if __name__ == "__main__":
       
       if (i == 0 and makenew) or not exists:
         FitsUtils.OutputFitsFileExtensions(columns, fname, outfilename, headers_info=[header_info,], mode="new")
+        exists = True
       else:
         FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, headers_info=[header_info,], mode="append")
 
