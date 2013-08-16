@@ -19,7 +19,7 @@ telluric_orders = [3,4,5,6,8,9,10,11,13,14,15,16,17,19,20,24,25]
 
 if __name__ == "__main__":
   #Initialize fitter
-  fitter = TelluricFitter.TelluricFitter(debug=True, debug_level=3)
+  fitter = TelluricFitter.TelluricFitter(debug=False)
   fitter.SetTelluricLineListFile(linelist)
   fitter.SetObservatory("McDonald")
   LineList = numpy.loadtxt(linelist, usecols=(0,))
@@ -28,6 +28,7 @@ if __name__ == "__main__":
   fileList = []
   start = 0
   makenew = True
+  exists = True
   for arg in sys.argv[1:]:
     if "-start" in arg:
       makenew = False
@@ -41,6 +42,8 @@ if __name__ == "__main__":
     logfile.write("Fitting file %s\n" %(fname))
     name = fname.split(".fits")[0]
     outfilename = "Corrected_%s.fits" %name
+    if outfilename not in os.listdir("./"):
+      exists = False
 
     orders = FitsUtils.MakeXYpoints(fname, errors="error", extensions=True, x="wavelength", y="flux")
     header = pyfits.getheader(fname)
@@ -81,7 +84,7 @@ if __name__ == "__main__":
     angle = float(header["ZD"])
     resolution = 60000.0
     humidity = RH[bestindex]
-    humidity = 90.0
+    #humidity = 90.0
     T_fahrenheit = T[bestindex]
     pressure = P[bestindex]*Units.hPa/Units.inch_Hg
     pressure = ( float(header["BAROMSTR"]) + float(header["BAROMEND"]) ) /2.0
@@ -194,7 +197,7 @@ if __name__ == "__main__":
           print "Not saving the following info: %s" %(fitter.parnames[j])
       
       
-      if i == 0 and makenew:
+      if (i == 0 and makenew) or not exists:
         FitsUtils.OutputFitsFileExtensions(columns, fname, outfilename, headers_info=[header_info,], mode="new")
       else:
         FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, headers_info=[header_info,], mode="append")
