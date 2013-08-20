@@ -361,8 +361,6 @@ class LineFitter:
   
     #Open file and update the appropriate extension
     hdulist = pyfits.open(filename, mode='update', save_backup=True)
-    print hdulist[0]
-    print hdulist[1]
     if extension < len(hdulist):
       hdulist[extension] = tablehdu
     else:
@@ -379,7 +377,7 @@ if __name__ == "__main__":
   #Parse command line arguments
   files = []
   telluric = False
-  windowsize = 100
+  windowsize = 200
   for arg in sys.argv[1:]:
     if "-t" in arg:
       telluric=True

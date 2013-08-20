@@ -33,6 +33,7 @@ def Correct(original, corrected, offset=None):
   print len(original_orders), len(corrected_orders)
   if offset == None:
     offset = len(original_orders) - len(corrected_orders)
+  offset = 0
   for i in range(offset, len(original_orders)):
     data = original_orders[i]
     data.cont = FindContinuum.Continuum(data.x, data.y)

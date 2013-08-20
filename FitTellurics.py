@@ -19,7 +19,7 @@ telluric_orders = [3,4,5,6,8,9,10,11,13,14,15,16,17,19,20,24,25]
 
 if __name__ == "__main__":
   #Initialize fitter
-  fitter = TelluricFitter.TelluricFitter(debug=False)
+  fitter = TelluricFitter.TelluricFitter(debug=False, debug_level=5)
   fitter.SetTelluricLineListFile(linelist)
   fitter.SetObservatory("McDonald")
   LineList = numpy.loadtxt(linelist, usecols=(0,))
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     models = []
     
     #Make a test model, to determine whether/how to fit each value
-    fitter.AdjustValue({"wavestart": orders[0].x[0]-20,
+    fitter.AdjustValue({"wavestart": orders[start].x[0]-20,
                         "waveend": orders[-1].x[-1]+20})
     fitpars = [fitter.const_pars[j] for j in range(len(fitter.parnames)) if fitter.fitting[j] ]
     test_model = fitter.GenerateModel(fitpars, LineList, nofit=True)
