@@ -13,16 +13,17 @@ from astropy import units, constants
 import StarData
 import SpectralTypeRelations
 from PlotBlackbodies import Planck
-import RotBroad
+import RotBroad_Fast as RotBroad
 import FittingUtilities
 import MakeModel
+import HelperFunctions
 
 
 #Ensure a directory exists. Create it if not
-def ensure_dir(f):
-    d = os.path.dirname(f)
-    if not os.path.exists(d):
-        os.makedirs(d)
+#def ensure_dir(f):
+#    d = os.path.dirname(f)
+#    if not os.path.exists(d):
+#        os.makedirs(d)
         
 
 homedir = os.environ["HOME"]
@@ -128,7 +129,7 @@ if __name__ == "__main__":
     else:
       fileList.append(arg)
 
-  ensure_dir(outdir)
+  HelperFunctions.ensure_dir(outdir)
   outfile = open(outdir + "logfile.dat", "w")
   outfile.write("Sensitivity Analysis:\n*****************************\n\n")
   outfile.write("Filename\t\t\tPrimary Temperature\tSecondary Temperature\tMass (Msun)\tMass Ratio\tVelocity\tPeak Correct?\tSignificance\n")
@@ -187,6 +188,7 @@ if __name__ == "__main__":
     primary_temp = MS.Interpolate(MS.Temperature, stardata.spectype[:2])
     primary_radius = MS.Interpolate(MS.Radius, stardata.spectype[:2])
     primary_mass = MS.Interpolate(MS.Mass, stardata.spectype[:2])
+    companions = HelperFunctions.CheckMultiplicityWDS(starname)
 
     #Begin loop over model spectra
     for j, model in enumerate(model_data):
@@ -199,7 +201,8 @@ if __name__ == "__main__":
 
       left = numpy.searchsorted(model.x, orders[0].x[0] - 10.0)
       right = numpy.searchsorted(model.x, orders[-1].x[-1] + 10.0)
-      model = RotBroad.Broaden2(model[left:right], 20*units.km.to(units.cm))
+      model = RotBroad.Broaden(model[left:right], 20*units.km.to(units.cm), linear=False)
+      model_data[j] = model.copy()
       MODEL = interp(model.x, model.y)
 
       #Loop over velocities
@@ -216,23 +219,26 @@ if __name__ == "__main__":
           model2 = DataStructures.xypoint(right - left + 1)
           model2.x = numpy.linspace(model.x[left], model.x[right], right - left + 1)
           model2.y = MODEL(model2.x*(1.0+vel/3e5))
-          model3 = model2.copy()
-          model3.y = MODEL(model2.x)
           model2.cont = FittingUtilities.Continuum(model2.x, model2.y, fitorder=3, lowreject=1.5, highreject=10.0)
-          model3.cont = FittingUtilities.Continuum(model3.x, model3.y, fitorder=3, lowreject=1.5, highreject=10.0)
 
           #b: Convolve to detector resolution
           model2 = MakeModel.ReduceResolution(model2.copy(), 60000, extend=False)
-          model3 = MakeModel.ReduceResolution(model3.copy(), 60000, extend=False)
 
           #c: rebin to the same spacing as the data
           xgrid = numpy.arange(model2.x[0], model2.x[-1], order2.x[1] - order2.x[0])
           model2 = MakeModel.RebinData(model2.copy(), xgrid)
-          model3 = MakeModel.RebinData(model3.copy(), xgrid)
 
           #d: scale to be at the appropriate flux ratio
           primary_flux = Planck(order2.x.mean()*units.nm.to(units.cm), primary_temp)
-          secondary_flux = Planck(order2.x.mean()*units.nm.to(units.cm), temp_list[j])
+	  if companions:
+	    for configuration in companions:
+	      component = companions[configuration]:
+		if component["Separation"] < 3.0:
+		  if i == 0:
+		    print "Known %s companion with a separation of %g arcseconds!" %(component["Secondary SpT"], component["Separation"])
+		  temperature = MS.Interpolate(MS.Temperature, component["Secondary SpT"])
+		  primary_flux += Planck(order2.x.mean()*units.nm.to(units.cm), temperature)
+	  secondary_flux = Planck(order2.x.mean()*units.nm.to(units.cm), temp_list[j])
           scale = secondary_flux / primary_flux * (secondary_radius/primary_radius)**2
           model2.y = (model2.y/model2.cont - 1.0)*scale + 1.0
           model_fcn = interp(model2.x, model2.y)
@@ -241,7 +247,36 @@ if __name__ == "__main__":
           #Smooth data in the same way I would normally
           #smoothed =  FittingUtilities.savitzky_golay(order2.y, windowsize, 5)
           #reduceddata = order2.y/smoothed
-          reduceddata = order2.y
+	  smoothed = Smooth.SmoothData(order2, windowsize, 5)
+	  order2.y /= smoothed.y
+	  order2.cont = FittingUtilities.Continuum(order2.x, order2.y, fitorder=2)
+	  orders[i] = order2.copy()
+	#Do the actual cross-correlation using PyCorrs (order by order with appropriate weighting)
+	corr = Correlate.PyCorr2(orders, resolution=60000, models=[model_data[j],], stars=[star_list[j],], temps=[temp_list[j],], gravities=[gravity_list[j],], metallicities=[metal_list[j],], vsini=0.0, debug=False, save_output=False)[0]
+
+	#output
+        outfilename = "%s%s_t%i_v%i" %(outdir, fname.split(".fits")[0], temp_list[j], vel)
+	print "Outputting CCF to %s" %outfilename
+	numpy.savetxt(outfilename, numpy.transpose((corr.x, corr.y)), fmt="%.10g")
+	
+	#Write to logfile
+	idx = numpy.argmax(corr.y)
+	vmax = corr.x[idx]
+	fit = FittingUtilities.Continuum(corr.x, corr.y, fitorder=2, lowreject=4, highreject=2)
+	corr.y -= fit
+	mean = corr.y.mean()
+	std = corr.y.std()
+	significance = (corr.y[idx] - mean) / std
+	tolerance = 10.0
+	if numpy.abs(vmax - vel) <= tolerance:
+	  #Signal found!
+	  outfile.write("%s\t%i\t\t\t%i\t\t\t\t%.2f\t\t%.4f\t\t%i\t\tyes\t\t%.2f\n" %(fname, primary_temp, temp_list[j], secondary_mass, massratio, vel, significance) )
+	else:
+	  outfile.write("%s\t%i\t\t\t%i\t\t\t\t%.2f\t\t%.4f\t\t%i\t\tno\t\t%.2f\n" %(fname, primary_temp, temp_list[j], secondary_mass, massratio, vel, significance) )
+
+
+  outfile.close()
+  """
 
 	  #vsini = 60.0
           #order2.x, order2.y = FittingUtilities.HighPassFilter(order2, vsini*units.km.to(units.cm), linearize=True)
@@ -318,7 +353,7 @@ if __name__ == "__main__":
 
           
   outfile.close()
-      
+  """ 
     
 
 

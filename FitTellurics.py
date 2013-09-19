@@ -65,16 +65,15 @@ if __name__ == "__main__":
     bestindex = 0
     difference = 9e9
     for line in lines[1:]:
-      segments = line.split()
-      if date in segments[0]:
-        segments = segments[1].split(",")
-        t = segments[0]
-        t_seg = t.split(":")
-        weather_time = 3600*float(t_seg[0]) + 60*float(t_seg[1]) + float(t_seg[2])
+      segments = line.split(",")
+      if date in line[:10]:
+        t = segments[2]
+        t_set = t.split(":")
+        weather_time = 3600*float(t_seg[0]) + 60*float(t_seg[1])
         if numpy.abs(time - weather_time) < difference:
           difference = numpy.abs(time - weather_time)
           bestindex = idx
-        times.append(segments[0])
+        times.append(segments[2])
         T.append(float(segments[3]))
         RH.append(float(segments[4]))
         P.append(float(segments[5]))
