@@ -58,11 +58,7 @@ def Correct(original, corrected, offset=None):
       sys.exit("Error! Model size (%i) is larger than data size (%i)" %(model.size(), data.size()))
 
     badindices = numpy.where(numpy.logical_or(data.y <= 0, model.y < 0.05))[0]
-    model.y[badindices] = data.y[badindices]
-
-    plt.plot(data.x, data.y/data.cont, 'k-')
-    plt.plot(model.x, model.y, 'r-')
-    plt.show()
+    model.y[badindices] = data.y[badindices]/data.cont[badindices]
     
     data.y /= model.y
     original_orders[i] = data.copy()
@@ -99,38 +95,37 @@ def main1():
     allfiles = os.listdir("./")
     corrected_files = [f for f in allfiles if "Corrected_" in f and f.endswith(".fits")]
     #original_files = [f for f in allfiles if any(f in cf for cf in corrected_files)]
+    hip_files = [f for f in allfiles if "HIP_" in f and f.endswith("-0.fits")]
 
-    #print corrected_files
-    #print original_files
+    for hip in hip_files:
+      if any([hip.replace("-0", "-1") in f for f in corrected_files]):
+        original = hip
+        corrected = "Corrected_%s" %(hip.replace("-0", "-1"))
+        print corrected, original
+      
+        outfilename = "%s_telluric_corrected.fits" %(original.split(".fits")[0])
+        print "Outputting to %s" %outfilename
 
-    for corrected in corrected_files:
-      original = [f for f in allfiles if (f in corrected and f != corrected)]
-      if len(original) == 1:
-        original = original[0]
-      else:
-        sys.exit("Error! %i matches found to corrected file %s" %(len(original), corrected))
+        corrected_orders = Correct(original, corrected, offset=None)
 
-      print corrected, original
-      outfilename = "%s_telluric_corrected.fits" %(original.split(".fits")[0])
-      print "Outputting to %s" %outfilename
-
-      corrected_orders = Correct(original, corrected, offset=None)
-
-      column_list = []
-      for i, data in enumerate(corrected_orders):
-        plt.plot(data.x, data.y/data.cont)
-        #Set up data structures for OutputFitsFile
-        columns = {"wavelength": data.x,
-                   "flux": data.y,
-                   "continuum": data.cont,
-                   "error": data.err}
-        column_list.append(columns)
-      FitsUtils.OutputFitsFileExtensions(column_list, original, outfilename, mode="new")
+        column_list = []
+        for i, data in enumerate(corrected_orders):
+          plt.plot(data.x, data.y/data.cont)
+          #Set up data structures for OutputFitsFile
+          columns = {"wavelength": data.x,
+                     "flux": data.y,
+                     "continuum": data.cont,
+                     "error": data.err}
+          column_list.append(columns)
+        FitsUtils.OutputFitsFileExtensions(column_list, original, outfilename, mode="new")
         
-      plt.title(original)
-      plt.xlabel("Wavelength (nm)")
-      plt.ylabel("Flux")
-      plt.show()
+        plt.title(original)
+        plt.xlabel("Wavelength (nm)")
+        plt.ylabel("Flux")
+        plt.show()
+
+      else:
+        print "No Correction file found for file %s" %hip
 
 
 
