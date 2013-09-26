@@ -232,12 +232,12 @@ if __name__ == "__main__":
           primary_flux = Planck(order2.x.mean()*units.nm.to(units.cm), primary_temp)
 	  if companions:
 	    for configuration in companions:
-	      component = companions[configuration]:
-		if component["Separation"] < 3.0:
-		  if i == 0:
-		    print "Known %s companion with a separation of %g arcseconds!" %(component["Secondary SpT"], component["Separation"])
-		  temperature = MS.Interpolate(MS.Temperature, component["Secondary SpT"])
-		  primary_flux += Planck(order2.x.mean()*units.nm.to(units.cm), temperature)
+	      component = companions[configuration]
+	      if component["Separation"] < 3.0:
+		if i == 0:
+		  print "Known %s companion with a separation of %g arcseconds!" %(component["Secondary SpT"], component["Separation"])
+		temperature = MS.Interpolate(MS.Temperature, component["Secondary SpT"])
+		primary_flux += Planck(order2.x.mean()*units.nm.to(units.cm), temperature)
 	  secondary_flux = Planck(order2.x.mean()*units.nm.to(units.cm), temp_list[j])
           scale = secondary_flux / primary_flux * (secondary_radius/primary_radius)**2
           model2.y = (model2.y/model2.cont - 1.0)*scale + 1.0
