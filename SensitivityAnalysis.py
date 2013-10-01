@@ -165,18 +165,32 @@ if __name__ == "__main__":
       for region in badregions:
         left = numpy.searchsorted(order.x, region[0])
         right = numpy.searchsorted(order.x, region[1])
-        order.x = numpy.delete(order.x, numpy.arange(left, right))
-        order.y = numpy.delete(order.y, numpy.arange(left, right))
-        order.cont = numpy.delete(order.cont, numpy.arange(left, right))
-        order.err = numpy.delete(order.err, numpy.arange(left, right))
+        if left == 0 or right == order.size():
+          order.x = numpy.delete(order.x, numpy.arange(left, right))
+          order.y = numpy.delete(order.y, numpy.arange(left, right))
+          order.cont = numpy.delete(order.cont, numpy.arange(left, right))
+          order.err = numpy.delete(order.err, numpy.arange(left, right))
+        else:
+          print "Warning! Bad region covers the middle of order %i" %i
+          print "Interpolating rather than removing"
+          order.y[left:right] = order.cont[left:right]
+          order.err[left:right] = 9e9
 
       #Remove whole order if it is too small
-      if order.x.size > windowsize:
-        order.cont = FittingUtilities.Continuum(order.x, order.y, lowreject=3, highreject=3)
-        orders_original[numorders -1 -i] = order.copy()
+      remove = False
+      if order.x.size <= windowsize:
+        remove = True
       else:
+        velrange = 3e5 * (numpy.median(order.x) - order.x[0]) / numpy.median(order.x)
+        if velrange <= 1000.0:
+          remove = True
+      if remove:
         print "Removing order %i" %(numorders - 1 - i)
         orders_original.pop(numorders - 1 - i)
+      else:
+        order.cont = FittingUtilities.Continuum(order.x, order.y, lowreject=3, highreject=3)
+        orders_original[numorders -1 -i] = order.copy()
+      
         
 
     #Read in the name of the star from the fits header
