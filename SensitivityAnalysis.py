@@ -93,7 +93,7 @@ temp_list = []
 gravity_list = []
 metal_list = []
 model_data = []
-for fname in model_list:
+for fname in model_list[10:11]:
   if "PHOENIX2004" in fname:
     temp = int(fname.split("lte")[-1][:2])*100
     gravity = float(fname.split("lte")[-1][3:6])
@@ -157,7 +157,7 @@ if __name__ == "__main__":
       ERROR = interp(order.x, order.err)
       left = int(order.size()/4.0)
       right = int(order.size()*3.0/4.0 + 0.5)
-      left, right = 20, -20
+      left, right = 20, order.x.size-20
       order.x = numpy.linspace(order.x[left], order.x[right],right - left + 1)
       order.y = DATA(order.x)
       order.cont = CONT(order.x)
@@ -174,7 +174,7 @@ if __name__ == "__main__":
           order.cont = numpy.delete(order.cont, numpy.arange(left, right))
           order.err = numpy.delete(order.err, numpy.arange(left, right))
         else:
-          print "Warning! Bad region covers the middle of order %i" %i
+          print "Warning! Bad region covers the middle of order %i" %(numorders - 1 - i)
           print "Interpolating rather than removing"
           order.y[left:right] = order.cont[left:right]
           order.err[left:right] = 9e9
@@ -182,12 +182,10 @@ if __name__ == "__main__":
       #Remove whole order if it is too small
       remove = False
       if order.x.size <= windowsize:
-        print order.x.size, windowsize
         remove = True
       else:
         velrange = 3e5 * (numpy.median(order.x) - order.x[0]) / numpy.median(order.x)
         if velrange <= 1000.0:
-          print velrange
           remove = True
       if remove:
         print "Removing order %i" %(numorders - 1 - i)
@@ -196,8 +194,9 @@ if __name__ == "__main__":
         order.cont = FittingUtilities.Continuum(order.x, order.y, lowreject=3, highreject=3)
         orders_original[numorders -1 -i] = order.copy()
       
-        
 
+    print "Number of orders remaining: ", len(orders_original)
+        
     #Read in the name of the star from the fits header
     header = pyfits.getheader(fname)
     starname = header["OBJECT"].split()[0].replace("_", " ")
@@ -228,7 +227,7 @@ if __name__ == "__main__":
       for vel in vel_list:
         corrlist = []
         normalization = 0.0
-        for i, order in enumerate(orders[::-1]):
+        for i, order in enumerate(orders):
           order2 = order.copy()
           #Process the model
           #a: make a segment of the total model to work with
@@ -295,84 +294,4 @@ if __name__ == "__main__":
 
 
   outfile.close()
-  """
-
-	  #vsini = 60.0
-          #order2.x, order2.y = FittingUtilities.HighPassFilter(order2, vsini*units.km.to(units.cm), linearize=True)
-          #x, reduceddata = FittingUtilities.HighPassFilter(order2, vsini*units.km.to(units.cm), linearize=True)
-          #filterfcn = interp(x, reduceddata)
-          #reduceddata = filterfcn(order2.x)
-          #plt.plot(order2.x, order2.y)
-          #plt.plot(order2.x, reduceddata+2)
-          #plt.show()
-          #model3.x, model3.y = FittingUtilities.HighPassFilter(model3, vsini*units.km.to(units.cm), linearize=True)
-          #x, reducedmodel = FittingUtilities.HighPassFilter(model3, vsini*units.km.to(units.cm), linearize=True)
-          #plt.plot(model3.x, model3.y/model3.cont)
-          #plt.plot(x, reducedmodel/model3.cont+1)
-          #plt.show()
-
-          #Do the cross-correlations
-          reducedmodel = model3.y
-          #reduceddata = order2.y
-          reducedmodel = model3.y/model3.cont
-          meandata = reduceddata.mean()
-          meanmodel = reducedmodel.mean()
-          data_rms = numpy.sqrt(numpy.sum((reduceddata - meandata)**2))
-          model_rms = numpy.sqrt(numpy.sum((reducedmodel - meanmodel)**2))
-          left = numpy.searchsorted(model2.x, order2.x[0])
-          right = model2.x.size - numpy.searchsorted(model2.x, order2.x[-1])
-          delta = left - right
-
-          #plt.plot(order2.x, reduceddata - meandata)
-          #plt.plot(model2.x, reducedmodel - meanmodel)
-          #plt.show()
-          ycorr = scipy.signal.fftconvolve(reduceddata - meandata, (reducedmodel - meanmodel)[::-1], mode='valid')
-          xcorr = numpy.arange(ycorr.size)
-          lags = xcorr - (model2.x.size + order2.x.size + delta - 1.0)/2.0
-          lags = xcorr - right
-          distancePerLag = model2.x[1] - model2.x[0]
-          offsets = -lags*distancePerLag
-          velocity = offsets*3e5 / numpy.median(order2.x)
-          velocity, ycorr = velocity[::-1], ycorr[::-1]
-          left = numpy.searchsorted(velocity, -1000)
-          right = numpy.searchsorted(velocity, +1000)
-          corr = DataStructures.xypoint(right - left + 1)
-          corr.x = velocity[left:right]
-          corr.y = ycorr[left:right]/(data_rms*model_rms) * scale
-          corrlist.append(corr.copy())
-          normalization += 1.0 * scale
-
-        #Add up the individual CCFs
-        master_corr = corrlist[0]
-        for corr in corrlist[1:]:
-          correlation = interp(corr.x, corr.y)
-          master_corr.y += correlation(master_corr.x)
-        master_corr.y /= normalization
-
-        #output
-        outfilename = "%s%s_t%i_v%i" %(outdir, fname.split(".fits")[0], temp_list[j], vel)
-        print "Outputting CCF to %s" %outfilename
-        numpy.savetxt(outfilename, numpy.transpose((master_corr.x, master_corr.y)), fmt="%.10g")
-
-        #Write to logfile
-        idx = numpy.argmax(master_corr.y)
-        vmax = master_corr.x[idx]
-        fit = FittingUtilities.Continuum(master_corr.x, master_corr.y, fitorder=2, lowreject=3, highreject=3)
-        master_corr.y -= fit
-        mean = master_corr.y.mean()
-        std = master_corr.y.std()
-        significance = (master_corr.y[idx] - mean)/std
-        tolerance = 10.0
-        if numpy.abs(vmax - vel) <= tolerance:
-          #Signal found!
-          outfile.write("%s\t%i\t\t\t%i\t\t\t\t%.2f\t\t%.4f\t\t%i\t\tyes\t\t%.2f\n" %(fname, primary_temp, temp_list[j], secondary_mass, massratio, vel, significance) )
-        else:
-          outfile.write("%s\t%i\t\t\t%i\t\t\t\t%.2f\t\t%.4f\t\t%i\t\tno\t\t%.2f\n" %(fname, primary_temp, temp_list[j], secondary_mass, massratio, vel, significance) )
-
-
-          
-  outfile.close()
-  """ 
-    
-
-
+  
