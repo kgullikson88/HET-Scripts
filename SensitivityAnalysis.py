@@ -155,6 +155,7 @@ if __name__ == "__main__":
       ERROR = interp(order.x, order.err)
       left = int(order.size()/4.0)
       right = int(order.size()*3.0/4.0 + 0.5)
+      left, right = 20, -20
       order.x = numpy.linspace(order.x[left], order.x[right],right - left + 1)
       order.y = DATA(order.x)
       order.cont = CONT(order.x)
@@ -179,10 +180,12 @@ if __name__ == "__main__":
       #Remove whole order if it is too small
       remove = False
       if order.x.size <= windowsize:
+        print order.x.size, windowsize
         remove = True
       else:
         velrange = 3e5 * (numpy.median(order.x) - order.x[0]) / numpy.median(order.x)
         if velrange <= 1000.0:
+          print velrange
           remove = True
       if remove:
         print "Removing order %i" %(numorders - 1 - i)
