@@ -168,6 +168,13 @@ if __name__ == "__main__":
       for region in badregions:
         left = numpy.searchsorted(order.x, region[0])
         right = numpy.searchsorted(order.x, region[1])
+        if left != 0 and right != order.size():
+          print "Warning! Bad region covers the middle of order %i" %(numorders - 1 - i)
+          print "Extending region to the nearest chip edge!"
+          if left < order.size() - right:
+            left = 0
+          else:
+            right = order.size()
         if left == 0 or right == order.size():
           order.x = numpy.delete(order.x, numpy.arange(left, right))
           order.y = numpy.delete(order.y, numpy.arange(left, right))
@@ -269,8 +276,10 @@ if __name__ == "__main__":
 	  order2.y /= smoothed.y
 	  order2.cont = FittingUtilities.Continuum(order2.x, order2.y, fitorder=2)
 	  orders[i] = order2.copy()
+
+          
 	#Do the actual cross-correlation using PyCorrs (order by order with appropriate weighting)
-	corr = Correlate.PyCorr2(orders, resolution=60000, models=[model_data[j],], stars=[star_list[j],], temps=[temp_list[j],], gravities=[gravity_list[j],], metallicities=[metal_list[j],], vsini=0.0, debug=False, save_output=False)[0]
+	corr = Correlate.PyCorr2(orders, resolution=60000, models=[model_data[j],], model_fcns=None, stars=[star_list[j],], temps=[temp_list[j],], gravities=[gravity_list[j],], metallicities=[metal_list[j],], vsini=0.0, debug=False, save_output=False)[0]
 
 	#output
         outfilename = "%s%s_t%i_v%i" %(outdir, fname.split(".fits")[0], temp_list[j], vel)
