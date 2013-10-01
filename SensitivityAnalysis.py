@@ -17,6 +17,8 @@ import RotBroad_Fast as RotBroad
 import FittingUtilities
 import MakeModel
 import HelperFunctions
+import Smooth
+import Correlate
 
 
 #Ensure a directory exists. Create it if not
