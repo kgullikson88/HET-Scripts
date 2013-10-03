@@ -106,6 +106,7 @@ def MakePlot(infilename):
   #Set up dictionaries/lists
   p_spt = defaultdict(list)       #Primary spectral type
   s_spt = defaultdict(list)       #Secondary spectral type
+  s_temp = defaultdict(list)      #Secondary Temperature
   p_mass = defaultdict(list)      #Primary mass
   s_mass = defaultdict(list)      #Secondary mass
   q = defaultdict(list)           #Mass ratio
@@ -113,22 +114,25 @@ def MakePlot(infilename):
   sig = defaultdict(list)         #Average detection significance
   magdiff = defaultdict(list)     #Magnitude difference
   namedict = {"SecondarySpectralType": s_spt,
+              "SecondaryTemperature": s_temp,
               "SecondaryMass": s_mass,
 	      "MassRatio": q,
 	      "DetectionRate": det_rate,
               "AverageSignificance": sig,
               "MagnitudeDifference": magdiff}
   labeldict = {"SecondarySpectralType": "Secondary Spectral Type",
-              "SecondaryMass": "SecondaryMass (Solar Masses)",
-	      "MassRatio": "Mass Ratio",
-	      "DetectionRate": "Detection Rate (Percent)",
-              "AverageSignificance": "Average Significance",
-              "MagnitudeDifference": "Magnitude Difference"}
+               "SecondaryTemperature": "Secondary Temperature (K)",
+               "SecondaryMass": "SecondaryMass (Solar Masses)",
+               "MassRatio": "Mass Ratio",
+               "DetectionRate": "Detection Rate (Percent)",
+               "AverageSignificance": "Average Significance",
+               "MagnitudeDifference": "Magnitude Difference"}
 
   if xaxis not in namedict.keys() or yaxis not in namedict:
     print "Error! axis keywords must be one of the following:"
     for key in namedict.keys():
       print key
+    print "You chose %s for the x axis and %s for the y axis" %(xaxis, yaxis)
     sys.exit()
 
   MS = SpectralTypeRelations.MainSequence()
@@ -151,6 +155,7 @@ def MakePlot(infilename):
         if iternum != 0:
           #We are on to the next temperature. Save info!
           s_spt[starname].append(s_spectype)
+          s_temp[starname].append(current_temp)
           p_spt[starname].append(p_spectype)
           p_mass[starname].append(sec_mass/massratio)
           s_mass[starname].append(sec_mass)
