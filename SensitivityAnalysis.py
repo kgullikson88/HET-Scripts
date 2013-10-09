@@ -93,7 +93,7 @@ temp_list = []
 gravity_list = []
 metal_list = []
 model_data = []
-for fname in model_list[-5:-4]:
+for fname in model_list:
   if "PHOENIX2004" in fname:
     temp = int(fname.split("lte")[-1][:2])*100
     gravity = float(fname.split("lte")[-1][3:6])
@@ -258,7 +258,7 @@ if __name__ == "__main__":
 	  if companions:
 	    for configuration in companions:
 	      component = companions[configuration]
-	      if component["Separation"] < 3.0:
+	      if component["Separation"] < 3.0 and component["Secondary SpT"] != "Unknown":
 		if i == 0:
 		  print "Known %s companion with a separation of %g arcseconds!" %(component["Secondary SpT"], component["Separation"])
 		temperature = MS.Interpolate(MS.Temperature, component["Secondary SpT"])
@@ -272,15 +272,15 @@ if __name__ == "__main__":
           #Smooth data in the same way I would normally
           #smoothed =  FittingUtilities.savitzky_golay(order2.y, windowsize, 5)
           #reduceddata = order2.y/smoothed
-          plt.plot(order2.x, order2.y+0.01, 'k-')
+          #plt.plot(order2.x, order2.y+0.01, 'k-')
 	  smoothed = Smooth.SmoothData(order2, windowsize, 5, normalize=False)
-          plt.plot(smoothed.x, smoothed.y, 'b-')
+          #plt.plot(smoothed.x, smoothed.y, 'b-')
 	  order2.y /= smoothed.y
 	  order2.cont = FittingUtilities.Continuum(order2.x, order2.y, lowreject=1, highreject=5, fitorder=2)
 	  orders[i] = order2.copy()
-          plt.plot(order2.x, order2.y/order2.cont, 'r-')
-          plt.plot(order2.x, model_fcn(order2.x)+0.99, 'g-')
-        plt.show()
+          #plt.plot(order2.x, order2.y/order2.cont, 'r-')
+          #plt.plot(order2.x, model_fcn(order2.x)+0.99, 'g-')
+        #plt.show()
 
           
 	#Do the actual cross-correlation using PyCorr2 (order by order with appropriate weighting)
