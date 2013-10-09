@@ -93,7 +93,7 @@ temp_list = []
 gravity_list = []
 metal_list = []
 model_data = []
-for fname in model_list[10:11]:
+for fname in model_list[-5:-4]:
   if "PHOENIX2004" in fname:
     temp = int(fname.split("lte")[-1][:2])*100
     gravity = float(fname.split("lte")[-1][3:6])
@@ -119,7 +119,7 @@ if __name__ == "__main__":
   extensions=True
   tellurics=False
   trimsize = 100
-  windowsize = 91
+  windowsize = 101
   MS = SpectralTypeRelations.MainSequence()
   vel_list = range(-400, 400, 50)
   outdir = "Sensitivity/"
@@ -265,20 +265,25 @@ if __name__ == "__main__":
 		primary_flux += Planck(order2.x.mean()*units.nm.to(units.cm), temperature)
 	  secondary_flux = Planck(order2.x.mean()*units.nm.to(units.cm), temp_list[j])
           scale = secondary_flux / primary_flux * (secondary_radius/primary_radius)**2
-          model2.y = (model2.y/model2.cont - 1.0)*scale + 1.0
+          model2.y = (model2.y/model2.cont - 1.0)*scale
           model_fcn = interp(model2.x, model2.y)
           order2.y = (order2.y/order2.cont + model_fcn(order2.x))
 
           #Smooth data in the same way I would normally
           #smoothed =  FittingUtilities.savitzky_golay(order2.y, windowsize, 5)
           #reduceddata = order2.y/smoothed
-	  smoothed = Smooth.SmoothData(order2, windowsize, 5)
+          plt.plot(order2.x, order2.y+0.01, 'k-')
+	  smoothed = Smooth.SmoothData(order2, windowsize, 5, normalize=False)
+          plt.plot(smoothed.x, smoothed.y, 'b-')
 	  order2.y /= smoothed.y
-	  order2.cont = FittingUtilities.Continuum(order2.x, order2.y, fitorder=2)
+	  order2.cont = FittingUtilities.Continuum(order2.x, order2.y, lowreject=1, highreject=5, fitorder=2)
 	  orders[i] = order2.copy()
+          plt.plot(order2.x, order2.y/order2.cont, 'r-')
+          plt.plot(order2.x, model_fcn(order2.x)+0.99, 'g-')
+        plt.show()
 
           
-	#Do the actual cross-correlation using PyCorrs (order by order with appropriate weighting)
+	#Do the actual cross-correlation using PyCorr2 (order by order with appropriate weighting)
 	corr = Correlate.PyCorr2(orders, resolution=60000, models=[model_data[j],], model_fcns=None, stars=[star_list[j],], temps=[temp_list[j],], gravities=[gravity_list[j],], metallicities=[metal_list[j],], vsini=0.0, debug=False, save_output=False)[0]
 
 	#output

@@ -59,8 +59,9 @@ def GetChebyshevCoeffs(data, pvals, order=5):
     -If there is more than one band, the user MUST give the errors keyword or the code will crash!
       -I should probably fix this at some point...
 """
-def MakeXYpoints(datafile, errors=False, extensions=False, x=None, y=None, cont=None):
-  print "Reading in file %s: " %datafile
+def MakeXYpoints(datafile, errors=False, extensions=False, x=None, y=None, cont=None, debug=False):
+  if debug:
+    print "Reading in file %s: " %datafile
 
   if extensions:
     #This means the data is in fits extensions, with one order per extension
@@ -101,7 +102,7 @@ def MakeXYpoints(datafile, errors=False, extensions=False, x=None, y=None, cont=
   else:
     #Data is in multispec format rather than in fits extensions
     #Call Rick White's script
-    retdict = multispec.readmultispec(datafile)
+    retdict = multispec.readmultispec(datafile, quiet=not debug)
   
     #Check if wavelength units are in angstroms (common, but I like nm)
     hdulist = pyfits.open(datafile)
@@ -115,7 +116,8 @@ def MakeXYpoints(datafile, errors=False, extensions=False, x=None, y=None, cont=
           if waveunits == "angstroms" or waveunits == "Angstroms":
             #wave_factor = Units.nm/Units.angstrom
             wave_factor = units.angstrom.to(units.nm)
-	    print "Wavelength units are Angstroms. Scaling wavelength by ", wave_factor
+            if debug:
+              print "Wavelength units are Angstroms. Scaling wavelength by ", wave_factor
 
     if errors == False:
       numorders = retdict['flux'].shape[0]

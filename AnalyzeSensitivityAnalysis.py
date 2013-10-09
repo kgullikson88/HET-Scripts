@@ -228,7 +228,7 @@ def MakePlot(infilename):
 if __name__ == "__main__":
   if any(["new" in f for f in sys.argv[1:]]):
     directory = "Sensitivity/"
-    allfiles = [f for f in os.listdir(directory) if (f.startswith("HIP") or f.startswith("HR"))]
+    allfiles = [f for f in os.listdir(directory) if f.startswith("HIP") or (f.startswith("HR") and not f.startswith("HRS"))]
     prefixes = []
     for fname in allfiles:
       prefix = fname.split("_v")[0][:-6]
