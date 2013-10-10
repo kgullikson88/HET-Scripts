@@ -41,7 +41,7 @@ if __name__ == "__main__":
       model = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="model")
     for i, order in enumerate(orders):
       
-      order.cont = FindContinuum.Continuum(order.x, order.y, lowreject=3, highreject=3)
+      #order.cont = FindContinuum.Continuum(order.x, order.y, lowreject=3, highreject=3)
       if pixelscale:
         order.x = numpy.arange(order.size())
       if tellurics:
@@ -53,7 +53,7 @@ if __name__ == "__main__":
           plt.text(order.x.mean(), 1.1, str(i+1))
         else:
           plt.plot(order.x, order.y, ls)
-          #plt.plot(order.x, order.cont)
+          plt.plot(order.x, order.cont)
       if byorder:
         plt.title("Order %i" %i)
         plt.show()

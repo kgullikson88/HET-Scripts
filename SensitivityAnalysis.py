@@ -217,15 +217,14 @@ if __name__ == "__main__":
 
     #Begin loop over model spectra
     for j, model in enumerate(model_data):
-      orders = [order.copy() for order in orders_original]   #Make a copy of orders
       #Get info about the secondary star for this model temperature
       secondary_spt = MS.GetSpectralType(MS.Temperature, temp_list[j])
       secondary_radius = MS.Interpolate(MS.Radius, secondary_spt)
       secondary_mass = MS.Interpolate(MS.Mass, secondary_spt)
       massratio = secondary_mass / primary_mass
 
-      left = numpy.searchsorted(model.x, orders[0].x[0] - 10.0)
-      right = numpy.searchsorted(model.x, orders[-1].x[-1] + 10.0)
+      left = numpy.searchsorted(model.x, orders_original[0].x[0] - 10.0)
+      right = numpy.searchsorted(model.x, orders_original[-1].x[-1] + 10.0)
       model = RotBroad.Broaden(model[left:right], 20*units.km.to(units.cm), linear=False)
       model_data[j] = model.copy()
       MODEL = interp(model.x, model.y)
@@ -234,6 +233,7 @@ if __name__ == "__main__":
       for vel in vel_list:
         corrlist = []
         normalization = 0.0
+        orders = [order.copy() for order in orders_original]   #Make a copy of orders
         for i, order in enumerate(orders):
           order2 = order.copy()
           #Process the model
@@ -255,56 +255,51 @@ if __name__ == "__main__":
 
           #d: scale to be at the appropriate flux ratio
           primary_flux = Planck(order2.x.mean()*units.nm.to(units.cm), primary_temp)
-	  if companions:
-	    for configuration in companions:
-	      component = companions[configuration]
-	      if component["Separation"] < 3.0 and component["Secondary SpT"] != "Unknown":
-		if i == 0:
-		  print "Known %s companion with a separation of %g arcseconds!" %(component["Secondary SpT"], component["Separation"])
-		temperature = MS.Interpolate(MS.Temperature, component["Secondary SpT"])
-		primary_flux += Planck(order2.x.mean()*units.nm.to(units.cm), temperature)
-	  secondary_flux = Planck(order2.x.mean()*units.nm.to(units.cm), temp_list[j])
-          scale = secondary_flux / primary_flux * (secondary_radius/primary_radius)**2
+          primary_radius = primary_radius**2
+          if companions:
+            for configuration in companions:
+              component = companions[configuration]
+              if component["Separation"] < 3.0 and component["Secondary SpT"] != "Unknown":
+                if i == 0:
+                  print "Known %s companion with a separation of %g arcseconds!" %(component["Secondary SpT"], component["Separation"])
+                temperature = MS.Interpolate(MS.Temperature, component["Secondary SpT"])
+                primary_radius += MS.Interpolate(MS.Radius, component["Secondary SpT"])**2
+                primary_flux += Planck(order2.x.mean()*units.nm.to(units.cm), temperature)
+          secondary_flux = Planck(order2.x.mean()*units.nm.to(units.cm), temp_list[j])
+          scale = secondary_flux / primary_flux * secondary_radius**2/primary_radius
           model2.y = (model2.y/model2.cont - 1.0)*scale
           model_fcn = interp(model2.x, model2.y)
           order2.y = (order2.y/order2.cont + model_fcn(order2.x))
 
           #Smooth data in the same way I would normally
-          #smoothed =  FittingUtilities.savitzky_golay(order2.y, windowsize, 5)
-          #reduceddata = order2.y/smoothed
-          #plt.plot(order2.x, order2.y+0.01, 'k-')
-	  smoothed = Smooth.SmoothData(order2, windowsize, 5, normalize=False)
-          #plt.plot(smoothed.x, smoothed.y, 'b-')
-	  order2.y /= smoothed.y
-	  order2.cont = FittingUtilities.Continuum(order2.x, order2.y, lowreject=1, highreject=5, fitorder=2)
-	  orders[i] = order2.copy()
-          #plt.plot(order2.x, order2.y/order2.cont, 'r-')
-          #plt.plot(order2.x, model_fcn(order2.x)+0.99, 'g-')
-        #plt.show()
+          smoothed = Smooth.SmoothData(order2, windowsize, 5, normalize=False)
+          order2.y /= smoothed.y
+          order2.cont = FittingUtilities.Continuum(order2.x, order2.y, lowreject=1, highreject=5, fitorder=2)
+          orders[i] = order2.copy()
 
           
-	#Do the actual cross-correlation using PyCorr2 (order by order with appropriate weighting)
-	corr = Correlate.PyCorr2(orders, resolution=60000, models=[model_data[j],], model_fcns=None, stars=[star_list[j],], temps=[temp_list[j],], gravities=[gravity_list[j],], metallicities=[metal_list[j],], vsini=0.0, debug=False, save_output=False)[0]
+        #Do the actual cross-correlation using PyCorr2 (order by order with appropriate weighting)
+        corr = Correlate.PyCorr2(orders, resolution=60000, models=[model_data[j],], model_fcns=None, stars=[star_list[j],], temps=[temp_list[j],], gravities=[gravity_list[j],], metallicities=[metal_list[j],], vsini=0.0, debug=False, save_output=False)[0]
 
-	#output
+        #output
         outfilename = "%s%s_t%i_v%i" %(outdir, fname.split(".fits")[0], temp_list[j], vel)
-	print "Outputting CCF to %s" %outfilename
-	numpy.savetxt(outfilename, numpy.transpose((corr.x, corr.y)), fmt="%.10g")
-	
-	#Write to logfile
-	idx = numpy.argmax(corr.y)
-	vmax = corr.x[idx]
-	fit = FittingUtilities.Continuum(corr.x, corr.y, fitorder=2, lowreject=4, highreject=2)
-	corr.y -= fit
-	mean = corr.y.mean()
-	std = corr.y.std()
-	significance = (corr.y[idx] - mean) / std
-	tolerance = 10.0
-	if numpy.abs(vmax - vel) <= tolerance:
-	  #Signal found!
-	  outfile.write("%s\t%i\t\t\t%i\t\t\t\t%.2f\t\t%.4f\t\t%i\t\tyes\t\t%.2f\n" %(fname, primary_temp, temp_list[j], secondary_mass, massratio, vel, significance) )
-	else:
-	  outfile.write("%s\t%i\t\t\t%i\t\t\t\t%.2f\t\t%.4f\t\t%i\t\tno\t\t%.2f\n" %(fname, primary_temp, temp_list[j], secondary_mass, massratio, vel, significance) )
+        print "Outputting CCF to %s" %outfilename
+        numpy.savetxt(outfilename, numpy.transpose((corr.x, corr.y)), fmt="%.10g")
+
+        #Write to logfile
+        idx = numpy.argmax(corr.y)
+        vmax = corr.x[idx]
+        fit = FittingUtilities.Continuum(corr.x, corr.y, fitorder=2, lowreject=4, highreject=2)
+        corr.y -= fit
+        mean = corr.y.mean()
+        std = corr.y.std()
+        significance = (corr.y[idx] - mean) / std
+        tolerance = 10.0
+        if numpy.abs(vmax - vel) <= tolerance:
+          #Signal found!
+          outfile.write("%s\t%i\t\t\t%i\t\t\t\t%.2f\t\t%.4f\t\t%i\t\tyes\t\t%.2f\n" %(fname, primary_temp, temp_list[j], secondary_mass, massratio, vel, significance) )
+        else:
+          outfile.write("%s\t%i\t\t\t%i\t\t\t\t%.2f\t\t%.4f\t\t%i\t\tno\t\t%.2f\n" %(fname, primary_temp, temp_list[j], secondary_mass, massratio, vel, significance) )
 
 
   outfile.close()
