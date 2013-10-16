@@ -1,7 +1,7 @@
 import numpy
 import matplotlib.pyplot as plt
 import FitsUtils
-import pyfits
+from astropy.io import fits as pyfits
 import Units
 import os
 import FittingUtilities

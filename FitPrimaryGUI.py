@@ -12,7 +12,7 @@ import sys
 import time
 import os
 import subprocess
-import pyfits
+from astropy.io import fits as pyfits
 import FittingUtilities
 
 
