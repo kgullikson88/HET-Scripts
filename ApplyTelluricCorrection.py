@@ -7,6 +7,7 @@ import DataStructures
 import os
 import FindContinuum
 import numpy
+import HelperFunctions
 
 
 def ReadCorrectedFile(fname):
@@ -87,7 +88,7 @@ def main1():
                  "continuum": data.cont,
                  "error": data.err}
       column_list.append(columns)
-    FitsUtils.OutputFitsFileExtensions(column_list, original, outfilename, mode="new")
+    HelperFunctions.OutputFitsFileExtensions(column_list, original, outfilename, mode="new")
     
     plt.show()
 
@@ -117,7 +118,7 @@ def main1():
                      "continuum": data.cont,
                      "error": data.err}
           column_list.append(columns)
-        FitsUtils.OutputFitsFileExtensions(column_list, original, outfilename, mode="new")
+        HelperFunctions.OutputFitsFileExtensions(column_list, original, outfilename, mode="new")
         
         plt.title(original)
         plt.xlabel("Wavelength (nm)")

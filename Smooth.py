@@ -8,6 +8,7 @@ from astropy import units
 import DataStructures
 from scipy.interpolate import InterpolatedUnivariateSpline as interp
 import MakeModel
+import HelperFunctions
 
 BadRegions = [[420.7, 421.7],
               [425,429],
@@ -98,4 +99,4 @@ if __name__ == "__main__":
     plt.show()
     outfilename = "%s_smoothed.fits" %(fname.split(".fits")[0])
     print "Outputting to %s" %outfilename
-    FitsUtils.OutputFitsFileExtensions(column_list, fname, outfilename, mode='new')
+    HelperFunctions.OutputFitsFileExtensions(column_list, fname, outfilename, mode='new')

@@ -14,6 +14,7 @@ import MakeModel
 import RotBroad
 import FittingUtilities
 import FindContinuum
+import HelperFunctions
 
 """
   Function to create a model spectrum from a list
@@ -216,7 +217,7 @@ if __name__ == "__main__":
     plt.show()
 
     outfilename = "out.fits"
-    FitsUtils.OutputFitsFileExtensions(output_list, fname, outfilename, mode="new")
+    HelperFunctions.OutputFitsFileExtensions(output_list, fname, outfilename, mode="new")
       
       
       

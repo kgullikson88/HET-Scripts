@@ -5,7 +5,7 @@ import sys
 from scipy.interpolate import InterpolatedUnivariateSpline as interp
 import numpy
 import pylab
-
+import HelperFunctions
 
 if __name__ == "__main__":
   fileList = []
@@ -52,7 +52,15 @@ if __name__ == "__main__":
   pylab.show()
   
   
-  FitsUtils.OutputFitsFileExtensions(column_list, fileList[0], outfilename, mode="new")
+  HelperFunctions.OutputFitsFileExtensions(column_list, fileList[0], outfilename, mode="new")
     
+  #Add the files used to the primary header of the new file
+  hdulist = pyfits.open(outfilename, mode='update')
+  header = hdulist[0].header
+  for i in range(len(fileList)):
+    header.set("FILE%i" %(i+1), fileList[i], "File %i used in Co-Adding" %(i+1))
+  hdulist[0].header = header
+  hdulist.flush()
+  hdulist.close()  
 
     

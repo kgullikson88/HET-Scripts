@@ -8,6 +8,7 @@ import FitsUtils
 import DataStructures
 from astropy import units, constants
 import FittingUtilities
+import HelperFunctions
 
 
 def LowPass():
@@ -46,7 +47,7 @@ def LowPass():
       column_list.append(columns)
     outfilename = "%s_filtered.fits" %(fname.split(".fits")[0])
     print "Outputting to %s" %outfilename
-    FitsUtils.OutputFitsFileExtensions(column_list, fname, outfilename, mode='new')
+    HelperFunctions.OutputFitsFileExtensions(column_list, fname, outfilename, mode='new')
     plt.show()
 
 
@@ -100,7 +101,7 @@ def HighPass():
     outfilename = "%s_filtered.fits" %(fname.split(".fits")[0])
     print "Outputting to %s" %outfilename
     plt.show()
-    FitsUtils.OutputFitsFileExtensions(column_list, fname, outfilename, mode='new')
+    HelperFunctions.OutputFitsFileExtensions(column_list, fname, outfilename, mode='new')
 
 
 

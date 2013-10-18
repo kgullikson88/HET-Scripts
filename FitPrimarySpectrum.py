@@ -14,6 +14,7 @@ import MakeModel
 import RotBroad
 import FittingUtilities
 import FindContinuum
+import HelperFunctions
 
 
 
@@ -459,7 +460,7 @@ def main5():
               "error": order.err}
     column_list.append(column)
   plt.show()
-  FitsUtils.OutputFitsFileExtensions(column_list, fname, "savgol_out.fits", mode='new')
+  HelperFunctions.OutputFitsFileExtensions(column_list, fname, "savgol_out.fits", mode='new')
 
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):

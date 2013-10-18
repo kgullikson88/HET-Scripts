@@ -2,6 +2,7 @@ import FitsUtils
 import numpy
 import sys
 import matplotlib.pyplot as plt
+import HelperFunctions
 
 trimming = {
            21: [0, 576.3],
@@ -98,9 +99,9 @@ def main1():
                  "error": order.err}
       
       if i == 0:
-        FitsUtils.OutputFitsFileExtensions(columns, fname, outfilename, mode="new")
+        HelperFunctions.OutputFitsFileExtensions(columns, fname, outfilename, mode="new")
       else:
-        FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, mode="append")
+        HelperFunctions.OutputFitsFileExtensions(columns, outfilename, outfilename, mode="append")
         
 
 
@@ -135,6 +136,6 @@ if __name__ == "__main__":
                  "error": order.err}
       
       if i == 0:
-        FitsUtils.OutputFitsFileExtensions(columns, fname, outfilename, mode="new")
+        HelperFunctions.OutputFitsFileExtensions(columns, fname, outfilename, mode="new")
       else:
-        FitsUtils.OutputFitsFileExtensions(columns, outfilename, outfilename, mode="append")
+        HelperFunctions.OutputFitsFileExtensions(columns, outfilename, outfilename, mode="append")
