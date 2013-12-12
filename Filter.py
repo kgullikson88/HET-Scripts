@@ -35,7 +35,7 @@ def LowPass():
       linear.x = numpy.linspace(order.x[0], order.x[-1], linear.size())
       linear.y = datafcn(linear.x)
       linear.err = errorfcn(linear.x)
-      smoothed = FittingUtilities.LowPassFilter(linear, 50*units.km.to(units.cm))
+      smoothed = HelperFunctions.LowPassFilter(linear, 50*units.km.to(units.cm))
       smoothed /= smoothed.mean()
       mainaxis.plot(linear.x, linear.y)
       mainaxis.plot(linear.x, smoothed, 'r-', linewidth=1)
@@ -77,7 +77,7 @@ def HighPass():
       linear.y = datafcn(linear.x)
       linear.err = errorfcn(linear.x)
       linear.cont = FittingUtilities.Continuum(linear.x, linear.y)
-      smoothed = FittingUtilities.HighPassFilter(linear, vsini*units.km.to(units.cm))
+      smoothed = HelperFunctions.HighPassFilter(linear, vsini*units.km.to(units.cm))
       mean = numpy.mean(smoothed)
       std = numpy.std(smoothed)
       badindices = numpy.where(numpy.abs((smoothed-mean)/std > 3.0))[0]

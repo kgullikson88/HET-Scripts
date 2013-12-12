@@ -20,11 +20,9 @@ import HelperFunctions
 
 def BroadeningErrorFunction(pars, data, unbroadened):
   vsini, beta = pars[0]*units.km.to(units.cm), pars[1]
-  #print vsini, beta
-  #data, unbroadened = args[0], args[1]
   model = RotBroad.Broaden(unbroadened, vsini, beta=beta)
   model = MakeModel.RebinData(model, data.x)
-  return numpy.sum( FittingUtilities.GeneralLSErrorFunction(data, model) )
+  return numpy.sum( (data.y-model.y*data.cont)**2 / data.err**2 )
 
 
 
