@@ -1,5 +1,5 @@
 """
-  THIS FUNCTION IS NOT FOR THE SENSITIVITY ANALYSIS!	
+  THIS FUNCTION IS NOT FOR THE SENSITIVITY ANALYSIS!    
   This function takes a spectrum with a real secondary in it,
     and adds various levels of Gaussian random noise, then attempts
     to still detect the signal.
