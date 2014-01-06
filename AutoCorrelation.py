@@ -69,7 +69,7 @@ model_list = [ modeldir + "lte30-4.00-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.s
                modeldir + "lte76-4.50-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted",
                modeldir + "lte78-4.50-0.0.AGS.Cond.PHOENIX-ACES-2009.HighRes.7.sorted"]
 """
-	       modeldir + "lte30-4.0-0.5.Cond.PHOENIX2004.tab.7.sorted",
+               modeldir + "lte30-4.0-0.5.Cond.PHOENIX2004.tab.7.sorted",
                modeldir + "lte30-4.0+0.5.Cond.PHOENIX2004.tab.7.sorted",
                modeldir + "lte31-4.0-0.5.Cond.PHOENIX2004.tab.7.sorted",
                modeldir + "lte31-4.0+0.5.Cond.PHOENIX2004.tab.7.sorted",
@@ -242,7 +242,7 @@ if __name__ == "__main__":
       output_dir = ""
       outfilebase = dirs[-1].split(".fits")[0]
       for directory in dirs[:-1]:
-	output_dir = output_dir + directory + "/"
+        output_dir = output_dir + directory + "/"
       output_dir = output_dir + "Auto_Cross_correlations/"
     #Do the cross-correlation
     for vsini in [10, 20, 30, 40]:
