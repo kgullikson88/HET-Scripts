@@ -124,7 +124,7 @@ def GenerateModel(lines, strengths, xgrid, vsini, epsilon, resolution, vsys):
   model.y += 1.0
   if vsini > 10.0:
     model = RotBroad.Broaden2(model.copy(), vsini*units.km.to(units.cm), linear=True, epsilon=epsilon)
-  model = MakeModel.ReduceResolution(model, resolution)
+  model = FittingUtilities.ReduceResolution(model, resolution)
   return model
   
 """  

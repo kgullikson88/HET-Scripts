@@ -21,7 +21,7 @@ import HelperFunctions
 def BroadeningErrorFunction(pars, data, unbroadened):
   vsini, beta = pars[0]*units.km.to(units.cm), pars[1]
   model = RotBroad.Broaden(unbroadened, vsini, beta=beta)
-  model = MakeModel.RebinData(model, data.x)
+  model = FittingUtilities.RebinData(model, data.x)
   return numpy.sum( (data.y-model.y*data.cont)**2 / data.err**2 )
 
 
@@ -96,7 +96,7 @@ def Broaden(data, model, oversampling = 5, m = 201, dimension = 15):
   Broadened = interp(xnew, numpy.convolve(model_new,Broadening, mode="same") )
   model.y = Broadened(model.x)
   
-  return MakeModel.RebinData(model, data.x)
+  return FittingUtilities.RebinData(model, data.x)
 
 
 def main4():
@@ -131,8 +131,8 @@ def main4():
     #model = Broaden(order, unbroadened, m=401, dimension=20)
     model2 = RotBroad.Broaden2(unbroadened.copy(), 100*units.km.to(units.cm), linear=True)
     model3 = RotBroad.Broaden2(unbroadened.copy(), 140*units.km.to(units.cm), linear=True)
-    model2 = MakeModel.ReduceResolution(model2, 60000)
-    model3 = MakeModel.ReduceResolution(model3, 60000)
+    model2 = FittingUtilities.ReduceResolution(model2, 60000)
+    model3 = FittingUtilities.ReduceResolution(model3, 60000)
 
     unbroadened.y = (unbroadened.y - 1.0)/factor + 1.0
     #plt.plot(model.x, model.y)
@@ -185,7 +185,7 @@ def main3():
     size = unbroadened.size()
     
     #model2 = Broaden(order, unbroadened, m=401, dimension=20)
-    #model2 = MakeModel.RebinData(model2, order.x)
+    #model2 = FittingUtilities.RebinData(model2, order.x)
     ycorr = numpy.correlate(extended-1.0, unbroadened.y/unbroadened.cont-1.0, mode='same')[size:-size]
     #ycorr -= ycorr.min()
     plt.plot(ycorr)
@@ -238,7 +238,7 @@ def main2():
     fitvsini, fitbeta = brute(BroadeningErrorFunction, grid, args=(order, unbroadened), finish=None )
     print "Fitted values for order %i:\n\tvsini = %g\n\tbeta = %g" %(i+1, fitvsini, fitbeta)
     model2 = RotBroad.Broaden(unbroadened, fitvsini*units.km.to(units.cm), beta=fitbeta)
-    model2 = MakeModel.RebinData(model2, order.x)
+    model2 = FittingUtilities.RebinData(model2, order.x)
     model2.cont = FittingUtilities.Continuum(model2.x, model2.y, lowreject=1.5, highreject=10)
 
     plt.figure(1)
@@ -381,7 +381,7 @@ def main1():
             model = DataStructures.xypoint(x=order.x, y=model_dict[T][logg][Z](order.x) )
             model.cont = FittingUtilities.Continuum(model.x, model.y, lowreject=1.5, highreject=10)
             if reduce_resolution:
-              model = MakeModel.ReduceResolution(model, 60000)
+              model = FittingUtilities.ReduceResolution(model, 60000)
             #model = RotBroad.Broaden(model, vsini*units.km.to(units.cm))
             offset= FittingUtilities.CCImprove(order, model, be_safe=False)
             rv.append(-offset/order.x.mean() * constants.c.cgs.value)
@@ -397,7 +397,7 @@ def main1():
             model.cont = FittingUtilities.Continuum(model.x, model.y, lowreject=1.5, highreject=10)
             if reduce_resolution:
               model.y /= model.cont
-              model = MakeModel.ReduceResolution(model, 60000)
+              model = FittingUtilities.ReduceResolution(model, 60000)
               model.y *= model.cont
             model.y *= model.cont
             chisq += numpy.sum( (order.y - model.y/model.cont*order.cont)**2 / order.err**2 )
@@ -425,7 +425,7 @@ def main1():
                                      y=model_fcn(order.x*(1+best_rv/constants.c.cgs.value)) )
       model.cont = FittingUtilities.Continuum(model.x, model.y, lowreject=1.5, highreject=10)
       if reduce_resolution:
-        model = MakeModel.ReduceResolution(model, 60000)
+        model = FittingUtilities.ReduceResolution(model, 60000)
       plt.figure(1)
       plt.plot(order.x, order.y/order.cont, 'k-')
       plt.plot(model.x, model.y/model.cont, 'r-')

@@ -91,10 +91,10 @@ if __name__ == "__main__":
         #left = numpy.searchsorted(model.x, order.x[0])
         #right = numpy.searchsorted(model.x, order.x[-1])
         #segment = DataStructures.xypoint(x=model.x[left:right], y=model.y[left:right])
-        segment = MakeModel.RebinData(model, order.x)
+        segment = FittingUtilities.RebinData(model, order.x)
         segment.cont = FindContinuum.Continuum(segment.x, segment.y)
         segment = RotBroad.Broaden(segment, val*units.km.to(units.cm))
-        segment = MakeModel.ReduceResolution(segment, 50000)
+        segment = FittingUtilities.ReduceResolution(segment, 50000)
         order.cont = FindContinuum.Continuum(order.x, order.y)
 
         segment.y /= segment.cont
