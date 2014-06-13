@@ -11,6 +11,7 @@ import Units
 from astropy import units, constants
 import HelperFunctions
 import FittingUtilities
+import GetAtmosphere
 
 
 homedir = os.environ["HOME"]
@@ -41,31 +42,6 @@ namedict = {"pressure": ["PRESFIT", "PRESVAL", "Pressure"],
 
 
 
-def GetAtmosphereFile(header):
-  fnames = [f for f in os.listdir("./") if "GDAS_atmosphere" in f]
-  datestr = header["DATE-OBS"]
-  year = int(datestr.split("-")[0])
-  month = int(datestr.split("-")[1])
-  day = int(datestr.split("-")[2])
-  time = header["UT"]
-  hour = int(time.split(":")[0])
-  minute = int(time.split(":")[1])
-  obstime = year + (month*30 + day)/365.0 + (hour*60 + minute)/(365.0*24.0*60.0)
-  #obstime = hour + minute/60.0
-  filename = ""
-  mindiff = 9e12
-  for fname in fnames:
-    datestr = fname.split("_")[2]
-    year = int(datestr.split("-")[0])
-    month = int(datestr.split("-")[1])
-    day = int(datestr.split("-")[2])
-    hour = (float(fname.split("_")[3]) + float(fname.split("_")[4].split(".")[0]))/2.0
-    atmos_time = year + (month*30 + day)/365.0 + hour/(365.0*24.0)
-    #atmos_time = hour
-    if abs(atmos_time - obstime) < mindiff:
-      mindiff = abs(atmos_time - obstime)
-      filename = fname
-  return filename
 
 
 
@@ -113,6 +89,12 @@ if __name__ == "__main__":
 
   #START LOOPING OVER INPUT FILES
   for fname in fileList:
+    #Make sure this file is an object file
+    header = pyfits.getheader(fname)
+    if header['imagetyp'].strip() != 'object' or "solar" in header['object'].lower():
+      print "Skipping file %s, with imagetype = %s and object = %s" %(fname, header['imagetyp'], header['object'])
+      continue
+
     logfile = open("fitlog_%s.txt" %(fname.split(".fits")[0]), "a")
     logfile.write("Fitting file %s\n" %(fname))
     name = fname.split(".fits")[0]
@@ -121,7 +103,7 @@ if __name__ == "__main__":
     #Read file
     orders = HelperFunctions.ReadFits(fname, errors="error", extensions=True, x="wavelength", y="flux")
 
-    header = pyfits.getheader(fname)
+    #Get the observation time
     date = header["DATE-OBS"]
     time = header["UT"]
     t_seg = time.split(":")
@@ -163,46 +145,29 @@ if __name__ == "__main__":
     pressure = P[bestindex]*Units.hPa/Units.inch_Hg
     temperature = (T_fahrenheit - 32.0)*5.0/9.0 + 273.15
 
-
     if edit_atmosphere:
-      #Find the appropriate filename
-      atmosphere_fname = GetAtmosphereFile(header)
-      
-      #Read in GDAS atmosphere profile information
-      Pres,height,Temp,dew = numpy.loadtxt(atmosphere_fname, usecols=(0,1,2,3), unpack=True)
-      sorter = numpy.argsort(height)
-      height = height[sorter]
-      Pres = Pres[sorter]
-      Temp = Temp[sorter]
-      dew = dew[sorter]
-      
-      #Convert dew point temperature to ppmv
-      Pw = 6.116441 * 10**(7.591386*Temp/(Temp + 240.7263))
-      h2o = Pw / (Pres-Pw) * 1e6
-      
-      height /= 1000.0
-      Temp += 273.15
+      filenames = [f for f in os.listdir("./") if "GDAS" in f]      
+      height, Pres, Temp, h2o = GetAtmosphere.GetProfile(filenames, header['date-obs'], header['ut'])
+
       fitter.EditAtmosphereProfile("Temperature", height, Temp)
       fitter.EditAtmosphereProfile("Pressure", height, Pres)
       fitter.EditAtmosphereProfile("H2O", height, h2o)
       
-    
     #Adjust fitter values
-    fitter.FitVariable({"h2o": humidity})
-    #                    "temperature": temperature})
-    #                    "o2": 2.12e5})
     fitter.AdjustValue({"angle": angle,
                         "pressure": pressure,
                         "resolution": resolution,
+                        "temperature": temperature,
 			                  "o2": 2.12e5})
+    fitter.FitVariable({"h2o": humidity})
+    #                    "temperature": temperature})
     fitter.SetBounds({"h2o": [humidity_low, humidity_high],
                       "temperature": [temperature-10, temperature+10],
                       "o2": [5e4, 1e6],
-                      "resolution": [50000, 70000]})
+                      "resolution": [50000, 90000]})
     
     #Ignore the interstellar sodium D lines and parts of the O2 bands
     fitter.IgnoreRegions(badregions)
-    models = []
     
     # Determine the H2O abundance
     resolution = []
@@ -212,8 +177,9 @@ if __name__ == "__main__":
     waveshifts = []
     wave0 = []
     chisquared = []
+    fitter.DisplayVariables()
     #for i in [30, 35, 39, 41]:
-    for i in FindOrderNums(orders, [570, 650, 700, 725]):
+    for i in FindOrderNums(orders, [650, 700, 717, 727]):
       print "\n***************************\nFitting order %i: " %(i)
       order = orders[i]
       fitter.AdjustValue({"wavestart": order.x[0] - 20.0,
@@ -222,19 +188,16 @@ if __name__ == "__main__":
       primary = DataStructures.xypoint(x=order.x, y=numpy.ones(order.x.size))
       primary, model, R = fitter.Fit(data=order.copy(), 
                                      resolution_fit_mode="gauss", 
-                                     fit_primary=True, 
+                                     fit_source=True, 
                                      return_resolution=True,
-				     adjust_wave="model")
+                                     adjust_wave="model",
+                                     wavelength_fit_order=4)
       resolution.append(R)
       waveshifts.append(fitter.shift)
       wave0.append(fitter.data.x.mean())
       h2o.append(fitter.GetValue("h2o"))
       T.append(fitter.GetValue("temperature"))
       
-      #idx = fitter.parnames.index("h2o")
-      #h2o.append(fitter.const_pars[idx])
-      #idx = fitter.parnames.index("temperature")
-      #T.append(fitter.const_pars[idx])
       chisquared.append((1.0-min(model.y))/fitter.chisq_vals[-1])
 
     # Determine the average humidity (weight by chi-squared)
@@ -242,15 +205,16 @@ if __name__ == "__main__":
     temperature = numpy.sum(numpy.array(T)*numpy.array(chisquared)) / numpy.sum(chisquared)
     logfile.write("Humidity/Temperature values and their chi-squared values:\n")
     for h, t, c in zip(h2o, T, chisquared):
-      logfile.write("%g\t%g\n%g\n" %(h, t, 1.0/c))
-    logfile.write("\n")
+      logfile.write("%g\t%g\t%g\n" %(h, t, 1.0/c))
+    logfile.write("Best humidity = %.4f\n" %humidity)
+    logfile.write("Best temperature = %.4f\n" %temperature)
     fitter.AdjustValue({"h2o": humidity,
                         "temperature": temperature})
     
     # Now, determine the O2 abundance
     fitter.FitVariable({"o2": 2.12e5})
     #for i in [33, 38]:
-    for i in FindOrderNums(orders, [630, 694]):
+    for i in FindOrderNums(orders, [630, 695]):
       order = orders[i]
       fitter.AdjustValue({"wavestart": order.x[0] - 20.0,
                           "waveend": order.x[-1] + 20.0})
@@ -258,9 +222,10 @@ if __name__ == "__main__":
       primary = DataStructures.xypoint(x=order.x, y=numpy.ones(order.x.size))
       primary, model, R = fitter.Fit(data=order.copy(), 
                                      resolution_fit_mode="gauss", 
-                                     fit_primary=True,
+                                     fit_source=True,
                                      return_resolution=True,
-                                     adjust_wave="model")
+                                     adjust_wave="model",
+                                     wavelength_fit_order=4)
       resolution.append(R)
       waveshifts.append(fitter.shift)
       wave0.append(fitter.data.x.mean())
@@ -282,8 +247,11 @@ if __name__ == "__main__":
     logfile.write("O2 abundance and their chi-squared:\n")
     for o, c in zip(o2, chi2[-2:]):
       logfile.write("%g\t%g\n" %(o, 1.0/c))
-    o2 = numpy.sum(o2*chi2[-2:])/numpy.sum(chi2[:-2])
-    resolution = numpy.sum(resolution[:-2]*chi2[:-2])/numpy.sum(chi2[:-2])
+    o2 = numpy.sum(o2*chi2[-2:])/numpy.sum(chi2[-2:])
+    resolution = numpy.sum(resolution*chi2)/numpy.sum(chi2)
+    logfile.write("Best o2 = %.4f ppmv\n" %o2)
+    logfile.write("Best resolution = %.5f\n" %resolution)
+    logfile.write("Best velocity shift = %.4f km/s" %vel)
     """
     
     o2 = 224773
@@ -294,33 +262,39 @@ if __name__ == "__main__":
 
     # Finally, apply these parameters to all orders in the data
     for i, order in enumerate(orders):
-      print "\n\nGenerating model for order %i of %i\n" %(i, len(orders))
-      fitter.AdjustValue({"wavestart": order.x[0] - 20.0,
-                          "waveend": order.x[-1] + 20.0,
-                          "o2": o2,
-                          "h2o": humidity,
-                          "resolution": resolution})
-      fitpars = [fitter.const_pars[j] for j in range(len(fitter.parnames)) if fitter.fitting[j] ]
-      order.cont = FittingUtilities.Continuum(order.x, order.y, fitorder=3, lowreject=1.5, highreject=10)
-      fitter.ImportData(order)
-      fitter.resolution_fit_mode = "gauss"
-      #wave0 = order.x.mean()
-      #fitter.shift = vel/(constants.c.cgs.value*units.cm.to(units.km)) * wave0
-      print "fitter.shift = ", fitter.shift
-      primary, model = fitter.GenerateModel(fitpars, 
-                                            separate_primary=True, 
-                                            return_resolution=False)
-
-      data = fitter.data
-      if min(model.y) > 0.98:
-        #The wavelength calibration might be off
-        wave0 = order.x.mean()
-        fitter.shift = vel/(constants.c.cgs.value*units.cm.to(units.km)) * wave0
-        model = fitter.GenerateModel(fitpars, separate_primary=False, nofit=True)
-        model.x /= (1.0 + vel/(constants.c.cgs.value*units.cm.to(units.km)))
-        model = FittingUtilities.RebinData(model, order.x)
+      if (order.x[0] < 470 and order.x[-1] > 470) or max(order.y) < 0.01:
+        model = order.copy()
+        model.y = numpy.ones(order.size())
         data = order.copy()
-        data.cont = FittingUtilities.Continuum(data.x, data.y, fitorder=3, lowreject=2, highreject=5)
+        data.cont = numpy.ones(data.size())
+      else:
+        print "\n\nGenerating model for order %i of %i\n" %(i, len(orders))
+        fitter.AdjustValue({"wavestart": order.x[0] - 5.0,
+                            "waveend": order.x[-1] + 5.0,
+                            "o2": o2,
+                            "h2o": humidity,
+                            "resolution": resolution})
+        fitpars = [fitter.const_pars[j] for j in range(len(fitter.parnames)) if fitter.fitting[j] ]
+        order.cont = FittingUtilities.Continuum(order.x, order.y, fitorder=3, lowreject=1.5, highreject=10)
+        fitter.ImportData(order)
+        fitter.resolution_fit_mode = "gauss"
+        #wave0 = order.x.mean()
+        #fitter.shift = vel/(constants.c.cgs.value*units.cm.to(units.km)) * wave0
+        print "fitter.shift = ", fitter.shift
+        primary, model = fitter.GenerateModel(fitpars, 
+                                              separate_primary=True, 
+                                              return_resolution=False)
+
+        data = fitter.data
+        if min(model.y) > 0.98:
+          #The wavelength calibration might be off
+          wave0 = order.x.mean()
+          fitter.shift = vel/(constants.c.cgs.value*units.cm.to(units.km)) * wave0
+          model = fitter.GenerateModel(fitpars, separate_primary=False, nofit=True)
+          model.x /= (1.0 + vel/(constants.c.cgs.value*units.cm.to(units.km)))
+          model = FittingUtilities.RebinData(model, order.x)
+          data = order.copy()
+          data.cont = FittingUtilities.Continuum(data.x, data.y, fitorder=3, lowreject=2, highreject=5)
 
 
       # Set up data structures for OutputFitsFile
