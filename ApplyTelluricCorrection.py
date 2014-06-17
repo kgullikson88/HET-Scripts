@@ -27,7 +27,7 @@ def ReadCorrectedFile(fname):
   return orders, headers
 
 
-def Correct(original, corrected, offset=None):
+def Correct(original, corrected, offset=None, plot=True):
   #Read in the data and model
   original_orders = FitsUtils.MakeXYpoints(original, extensions=True, x="wavelength", y="flux", errors="error", cont="continuum")
   corrected_orders, corrected_headers = ReadCorrectedFile(corrected)
@@ -41,14 +41,15 @@ def Correct(original, corrected, offset=None):
     try:
       model = corrected_orders[i-offset]
       header = corrected_headers[i-offset]
-      print "Order = %i\nHumidity: %g\nO2 concentration: %g\n" %(i, header['h2oval'], header['o2val'])
+      if i == 0:
+        print "Order = %i\nHumidity: %g\nO2 concentration: %g\n" %(i, header['h2oval'], header['o2val'])
     except IndexError:
       model = DataStructures.xypoint(x=data.x, y=numpy.ones(data.x.size))
       print "Warning!!! Telluric Model not found for order %i" %i
-
-    #plt.plot(data.x, data.y/data.cont)
-    #plt.plot(model.x, model.y)
-    #plt.show()
+    
+    if plot:
+      plt.plot(data.x, data.y/data.cont)
+      plt.plot(model.x, model.y)
     if model.size() < data.size():
       left = numpy.searchsorted(data.x, model.x[0])
       right = numpy.searchsorted(data.x, model.x[-1])
@@ -63,6 +64,8 @@ def Correct(original, corrected, offset=None):
     
     data.y /= model.y
     original_orders[i] = data.copy()
+  if plot:
+    plt.show()
   return original_orders
 
 
@@ -94,39 +97,38 @@ def main1():
 
   else:
     allfiles = os.listdir("./")
-    corrected_files = [f for f in allfiles if "Corrected_" in f and f.endswith(".fits")]
+    corrected_files = [f for f in allfiles if "Corrected_HRS" in f and f.endswith(".fits")]
     #original_files = [f for f in allfiles if any(f in cf for cf in corrected_files)]
-    hip_files = [f for f in allfiles if "HIP_" in f and f.endswith("-0.fits")]
+    #hip_files = [f for f in allfiles if "HIP_" in f and f.endswith("-0.fits")]
 
-    for hip in hip_files:
-      if any([hip.replace("-0", "-1") in f for f in corrected_files]):
-        original = hip
-        corrected = "Corrected_%s" %(hip.replace("-0", "-1"))
-        print corrected, original
+    for fname in corrected_files:
+      try:
+        original = fname.split("Corrected_")[1]
+        corrected = Correct(original, fname, offset=None)
+      except IOError:
+        warnings.warn("No original file matching the Corrected file %s" %fname)
+        continue
+
+      outfilename = "%s_telluric_corrected.fits" %(original.split(".fits")[0])
+      print "Outputting to %s" %outfilename
+
+      column_list = []
+      for i, data in enumerate(corrected):
+        plt.plot(data.x, data.y/data.cont)
+        #Set up data structures for OutputFitsFile
+        columns = {"wavelength": data.x,
+                   "flux": data.y,
+                   "continuum": data.cont,
+                   "error": data.err}
+        column_list.append(columns)
+      HelperFunctions.OutputFitsFileExtensions(column_list, original, outfilename, mode="new")
       
-        outfilename = "%s_telluric_corrected.fits" %(original.split(".fits")[0])
-        print "Outputting to %s" %outfilename
+      plt.title(original)
+      plt.xlabel("Wavelength (nm)")
+      plt.ylabel("Flux")
+      plt.show()
 
-        corrected_orders = Correct(original, corrected, offset=None)
-
-        column_list = []
-        for i, data in enumerate(corrected_orders):
-          plt.plot(data.x, data.y/data.cont)
-          #Set up data structures for OutputFitsFile
-          columns = {"wavelength": data.x,
-                     "flux": data.y,
-                     "continuum": data.cont,
-                     "error": data.err}
-          column_list.append(columns)
-        HelperFunctions.OutputFitsFileExtensions(column_list, original, outfilename, mode="new")
-        
-        plt.title(original)
-        plt.xlabel("Wavelength (nm)")
-        plt.ylabel("Flux")
-        plt.show()
-
-      else:
-        print "No Correction file found for file %s" %hip
+    
 
 
 
