@@ -6,11 +6,14 @@ import matplotlib.pyplot as plt
 import DataStructures
 import os
 import FindContinuum
+import FittingUtilities
 import numpy
 import HelperFunctions
+import MakeModel
 
+plot = True
 
-def ReadCorrectedFile(fname):
+def ReadCorrectedFile(fname, yaxis="model"):
   orders = []
   headers = []
   hdulist = pyfits.open(fname)
@@ -18,7 +21,7 @@ def ReadCorrectedFile(fname):
   for i in range(1, numorders):
     order = hdulist[i].data
     xypt = DataStructures.xypoint(x=order.field("wavelength"),
-                                  y=order.field("model"),
+                                  y=order.field(yaxis),
                                   cont=order.field("continuum"),
                                   err=order.field("error"))
 
@@ -27,9 +30,9 @@ def ReadCorrectedFile(fname):
   return orders, headers
 
 
-def Correct(original, corrected, offset=None, plot=True):
+def Correct(original, corrected, offset=None, plot=True, get_primary=False):
   #Read in the data and model
-  original_orders = FitsUtils.MakeXYpoints(original, extensions=True, x="wavelength", y="flux", errors="error", cont="continuum")
+  original_orders = HelperFunctions.ReadFits(original, extensions=True, x="wavelength", y="flux", errors="error", cont="continuum")
   corrected_orders, corrected_headers = ReadCorrectedFile(corrected)
   print len(original_orders), len(corrected_orders)
   if offset == None:
@@ -37,7 +40,7 @@ def Correct(original, corrected, offset=None, plot=True):
   offset = 0
   for i in range(offset, len(original_orders)):
     data = original_orders[i]
-    data.cont = FindContinuum.Continuum(data.x, data.y)
+    data.cont = FittingUtilities.Continuum(data.x, data.y)
     try:
       model = corrected_orders[i-offset]
       header = corrected_headers[i-offset]
@@ -46,10 +49,12 @@ def Correct(original, corrected, offset=None, plot=True):
     except IndexError:
       model = DataStructures.xypoint(x=data.x, y=numpy.ones(data.x.size))
       print "Warning!!! Telluric Model not found for order %i" %i
-    
+
     if plot:
+      plt.figure(1)
       plt.plot(data.x, data.y/data.cont)
       plt.plot(model.x, model.y)
+    
     if model.size() < data.size():
       left = numpy.searchsorted(data.x, model.x[0])
       right = numpy.searchsorted(data.x, model.x[-1])
@@ -59,10 +64,17 @@ def Correct(original, corrected, offset=None, plot=True):
     elif model.size() > data.size():
       sys.exit("Error! Model size (%i) is larger than data size (%i)" %(model.size(), data.size()))
 
+    #if numpy.sum((model.x-data.x)**2) > 1e-8:
+    #  model = FittingUtilities.RebinData(model, data.x)
+      
+    data.y[data.y/data.cont < 1e-5] = 1e-5*data.cont[data.y/data.cont < 1e-5]
     badindices = numpy.where(numpy.logical_or(data.y <= 0, model.y < 0.05))[0]
     model.y[badindices] = data.y[badindices]/data.cont[badindices]
     
     data.y /= model.y
+    data.err /= model.y
+    if get_primary:
+      data.y /= primary.y
     original_orders[i] = data.copy()
   if plot:
     plt.show()
@@ -73,33 +85,41 @@ def Correct(original, corrected, offset=None, plot=True):
 
 
 def main1():
+  primary=False
+  plot = True
   if len(sys.argv) > 2:
     original = sys.argv[1]
     corrected = sys.argv[2]
+    if len(sys.argv) > 3 and "prim" in sys.argv[3]:
+      primary=True
   
     outfilename = "%s_telluric_corrected.fits" %(original.split(".fits")[0])
     print "Outputting to %s" %outfilename
 
-    corrected_orders = Correct(original, corrected, offset=None)
+    corrected_orders = Correct(original, corrected, offset=None, get_primary=primary)
 
     column_list = []
+    if plot:
+      plt.figure(2)
     for i, data in enumerate(corrected_orders):
-      plt.plot(data.x, data.y/data.cont)
+      if plot:
+        plt.plot(data.x, data.y/data.cont)
+        #plt.plot(data.x, data.cont)
       #Set up data structures for OutputFitsFile
       columns = {"wavelength": data.x,
                  "flux": data.y,
                  "continuum": data.cont,
                  "error": data.err}
       column_list.append(columns)
+    if plot:
+      plt.title("Corrected data")
+      plt.show()
     HelperFunctions.OutputFitsFileExtensions(column_list, original, outfilename, mode="new")
-    
-    plt.show()
 
   else:
     allfiles = os.listdir("./")
     corrected_files = [f for f in allfiles if "Corrected_HRS" in f and f.endswith(".fits")]
     #original_files = [f for f in allfiles if any(f in cf for cf in corrected_files)]
-    #hip_files = [f for f in allfiles if "HIP_" in f and f.endswith("-0.fits")]
 
     for fname in corrected_files:
       try:
@@ -128,7 +148,6 @@ def main1():
       plt.ylabel("Flux")
       plt.show()
 
-    
 
 
 
