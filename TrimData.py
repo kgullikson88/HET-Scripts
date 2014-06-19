@@ -106,7 +106,7 @@ def main1():
 
 
 
-if __name__ == "__main__":
+def Interactive():
   trim = Trimmer()
   for fname in sys.argv[1:]:
     if "-" in fname:
@@ -139,3 +139,57 @@ if __name__ == "__main__":
         HelperFunctions.OutputFitsFileExtensions(columns, fname, outfilename, mode="new")
       else:
         HelperFunctions.OutputFitsFileExtensions(columns, outfilename, outfilename, mode="append")
+
+
+
+def Automatic():
+  badorders = [16, 39, 42, 45, 46, 67, 69]
+  badwaves = [[461.2, 465.8],
+              [590.7, 593],
+              [703.4, 707.7],
+              ]
+  trimsize = 10
+  for fname in sys.argv[1:]:
+    orders = HelperFunctions.ReadExtensionFits(fname)
+    
+    # Remove the bad orders
+    for n in badorders[::-1]:
+      orders.pop(n)
+
+    #Trim the bad parts of the spectrum
+    column_list = []
+    for i, order in enumerate(orders):
+      order = order[trimsize:-trimsize]
+      for badsection in badwaves:
+        left = numpy.searchsorted(order.x, badsection[0])
+        right = numpy.searchsorted(order.x, badsection[1])
+        order.x = numpy.delete(order.x, numpy.arange(left, right))
+        order.y = numpy.delete(order.y, numpy.arange(left, right))
+        order.cont = numpy.delete(order.cont, numpy.arange(left, right))
+        order.err = numpy.delete(order.err, numpy.arange(left, right))
+      
+      columns = {"wavelength": order.x,
+                 "flux": order.y,
+                 "continuum": order.cont,
+                 "error": order.err}
+      column_list.append(columns)
+
+
+    #Output:
+    if "-" in fname:
+      n = int(fname.split("-")[-1].split(".fits")[0])
+      n = n + 1
+      base = fname.split("-")[0]
+    else:
+      n = 0
+      base = fname.split(".fits")[0]
+    outfilename = "%s-%i.fits" %(base, n)
+    print "Outputting to %s" %outfilename
+
+    HelperFunctions.OutputFitsFileExtensions(column_list, fname, outfilename, mode="new")
+
+
+
+if __name__ == "__main__":
+  #Interactive()
+  Automatic()

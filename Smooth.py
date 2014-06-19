@@ -100,7 +100,7 @@ if __name__ == "__main__":
     
     #Find the vsini of this star
     header = fits.getheader(fname)
-    starname = header["object"]
+    starname = header["object"].split()[0].replace("_", " ")
     found = False
     for data in vsini_data:
       if data[0] == starname:
