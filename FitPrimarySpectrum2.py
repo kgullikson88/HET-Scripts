@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import InterpolatedUnivariateSpline as interp
 from scipy.optimize import leastsq, brute
@@ -22,15 +22,15 @@ import HelperFunctions
   fullmodel:   xypoint structure with the full model.
                  This code will determine the important
                  lines from that
-  xgrid:       numpy array of the x points in the data
+  xgrid:       np array of the x points in the data
   vsini:       In km/s
   epsilon:     Linear limb darkening parameter
   resolution:  Detector resolution ( lambda/(delta lambda) )
 """
 def FitData(fullmodel, data, vsini, epsilon, resolution, threshold=0.99, vsys=0.0, nlines=20, logfilename="fitlog.txt"):
   #First, find the lines in the relevant part of the spectrum
-  left = numpy.searchsorted(fullmodel.x, data.x[0])
-  right = numpy.searchsorted(fullmodel.x, data.x[-1])
+  left = np.searchsorted(fullmodel.x, data.x[0])
+  right = np.searchsorted(fullmodel.x, data.x[-1])
   segment = fullmodel[left:right]
   segment.cont = FittingUtilities.Continuum(segment.x, segment.y, fitorder=15, lowreject=1.5, highreject=10, numiter=10)
   lines, strengths = FindLines(segment, threshold=threshold, numlines=nlines)
@@ -61,7 +61,7 @@ def FitData(fullmodel, data, vsini, epsilon, resolution, threshold=0.99, vsys=0.
   const_pars2[-1] = 100000
   delta_original = ErrorFunction(pars2, const_pars2, data, return_model=True)
   #model = GenerateModel(lines, strengths, data.x, vsini, epsilon, resolution, vsys)
-  chisq = numpy.sum(ErrorFunction(fitpars, const_pars, data))/float(data.size() - len(pars))
+  chisq = np.sum(ErrorFunction(fitpars, const_pars, data))/float(data.size() - len(pars))
   model = ErrorFunction(fitpars, const_pars, data, return_model=True)
   fitpars2 = list(fitpars)
   fitpars2[-3] = 0.0
@@ -92,8 +92,8 @@ def FitData(fullmodel, data, vsini, epsilon, resolution, threshold=0.99, vsys=0.
 def ErrorFunction(pars, const_pars, data, return_model=False):
   #Unpack parameters
   numlines = const_pars[0]
-  lines = numpy.zeros(numlines)
-  strengths = numpy.zeros(numlines)
+  lines = np.zeros(numlines)
+  strengths = np.zeros(numlines)
   for i in range(numlines):
     lines[i] = const_pars[i+1]
     strengths[i] = pars[i]
@@ -115,11 +115,11 @@ def ErrorFunction(pars, const_pars, data, return_model=False):
 def GenerateModel(lines, strengths, xgrid, vsini, epsilon, resolution, vsys):
   #Make spectrum of delta functions with same xgrid as given
   strengths = 1.0 - strengths
-  model = DataStructures.xypoint(x=xgrid, y=numpy.zeros(xgrid.size))
+  model = DataStructures.xypoint(x=xgrid, y=np.zeros(xgrid.size))
   delta_v = (xgrid[1] - xgrid[0])/xgrid[xgrid.size/2] * 3e5
   factor = 10./delta_v
   for i, line in enumerate(lines):
-    idx = numpy.searchsorted(model.x, line*(1+vsys/constants.c.cgs.value))
+    idx = np.searchsorted(model.x, line*(1+vsys/constants.c.cgs.value))
     model.y[idx] = -strengths[i]*factor
   model.y += 1.0
   if vsini > 10.0:
@@ -132,8 +132,8 @@ def GenerateModel(lines, strengths, xgrid, vsini, epsilon, resolution, vsys):
 """
 def FindLines(model, threshold=1.0, numlines=10):
   slope = [(model.y[i]-model.y[i-1])/(model.x[i]-model.x[i-1]) for i in range(1, model.x.size)]
-  slope = numpy.append(numpy.array(0.0), numpy.array(slope))
-  linepoints = numpy.where(model.y/model.cont < threshold)[0]
+  slope = np.append(np.array(0.0), np.array(slope))
+  linepoints = np.where(model.y/model.cont < threshold)[0]
   points = []
   lines = []
   strengths = []
@@ -142,9 +142,9 @@ def FindLines(model, threshold=1.0, numlines=10):
       points.append(int(line))
     else:
       if len(points) > 1:
-        asign = numpy.sign(slope[points[0]:points[-1]])
-        signchange = ((numpy.roll(asign, 1) - asign) < 0).astype(int)
-        minima = numpy.where(signchange > 0.5)[0] + points[0]
+        asign = np.sign(slope[points[0]:points[-1]])
+        signchange = ((np.roll(asign, 1) - asign) < 0).astype(int)
+        minima = np.where(signchange > 0.5)[0] + points[0]
         for minimum in minima:
           if model.y[minimum - 1] < model.y[minimum]:
             minimum -= 1
@@ -160,8 +160,8 @@ def FindLines(model, threshold=1.0, numlines=10):
       points = [int(line),]
   
   #Sort by line strength
-  lines = numpy.array(lines)
-  strengths = numpy.array(strengths)
+  lines = np.array(lines)
+  strengths = np.array(strengths)
   sortindices = [i[0] for i in sorted(enumerate(strengths), key=lambda x:x[1])]
   lines = lines[sortindices]
   strengths = strengths[sortindices]
@@ -174,7 +174,7 @@ if __name__ == "__main__":
   modelfile = "%slte86-4.00+0.5-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
   threshold = 0.90
   print "Reading file %s" %modelfile
-  x, y = numpy.loadtxt(modelfile, usecols=(0,1), unpack=True)
+  x, y = np.loadtxt(modelfile, usecols=(0,1), unpack=True)
   model = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026, 
                                  y=10**y)
   #model.cont = FittingUtilities.Continuum(model.x, model.y, fitorder=21, lowreject=1.5, highreject=20)
@@ -192,7 +192,7 @@ if __name__ == "__main__":
         continue
       #Linearize
       datafcn = interp(order.x, order.y)
-      x = numpy.linspace(order.x[0], order.x[-1], order.size())
+      x = np.linspace(order.x[0], order.x[-1], order.size())
       order = DataStructures.xypoint(x=x, y=datafcn(x))
       order.cont = FittingUtilities.Continuum(order.x, order.y)
       logfile = open(logfilename, "a")

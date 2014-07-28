@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import InterpolatedUnivariateSpline as interp
 from scipy.optimize import leastsq, brute
@@ -22,7 +22,7 @@ def BroadeningErrorFunction(pars, data, unbroadened):
   vsini, beta = pars[0]*units.km.to(units.cm), pars[1]
   model = RotBroad.Broaden(unbroadened, vsini, beta=beta)
   model = FittingUtilities.RebinData(model, data.x)
-  return numpy.sum( (data.y-model.y*data.cont)**2 / data.err**2 )
+  return np.sum( (data.y-model.y*data.cont)**2 / data.err**2 )
 
 
 
@@ -42,12 +42,12 @@ def Broaden(data, model, oversampling = 5, m = 201, dimension = 15):
   #resample data
   Spectrum = interp(data.x, data.y/data.cont)
   Model = interp(model.x, model.y)
-  xnew = numpy.linspace(data.x[0], data.x[-1], n)
+  xnew = np.linspace(data.x[0], data.x[-1], n)
   ynew = Spectrum(xnew)
   model_new = Model(xnew)
 
   #Make 'design matrix'
-  design = numpy.zeros((n-m,m))
+  design = np.zeros((n-m,m))
   for j in range(m):
     for i in range(m/2,n-m/2-1):
       design[i-m/2,j] = model_new[i-j+m/2]
@@ -56,12 +56,12 @@ def Broaden(data, model, oversampling = 5, m = 201, dimension = 15):
   #Do Singular Value Decomposition
   try:
     U,W,V_t = svd(design, full_matrices=False)
-  except numpy.linalg.linalg.LinAlgError:
+  except np.linalg.linalg.LinAlgError:
     outfilename = "SVD_Error.log"
     outfile = open(outfilename, "a")
-    numpy.savetxt(outfile, numpy.transpose((data.x, data.y, data.cont)))
+    np.savetxt(outfile, np.transpose((data.x, data.y, data.cont)))
     outfile.write("\n\n\n\n\n")
-    numpy.savetxt(outfile, numpy.transpose((model.x, model.y, model.cont)))
+    np.savetxt(outfile, np.transpose((model.x, model.y, model.cont)))
     outfile.write("\n\n\n\n\n")
     outfile.close()
     sys.exit("SVD did not converge! Outputting data to %s" %outfilename)
@@ -70,30 +70,30 @@ def Broaden(data, model, oversampling = 5, m = 201, dimension = 15):
   #   U, V are orthonormal, so inversion is just their transposes
   #   W is a diagonal matrix, so its inverse is 1/W
   W1 = 1.0/W
-  U_t = numpy.transpose(U)
-  V = numpy.transpose(V_t)
+  U_t = np.transpose(U)
+  V = np.transpose(V_t)
   
   #Remove the smaller values of W
   W1[dimension:] = 0
   W2 = diagsvd(W1,m,m)
     
   #Solve for the broadening function
-  spec = numpy.transpose(mat(ynew[m/2:n-m/2-1]))
-  temp = numpy.dot(U_t, spec)
-  temp = numpy.dot(W2,temp)
-  Broadening = numpy.dot(V,temp)
+  spec = np.transpose(mat(ynew[m/2:n-m/2-1]))
+  temp = np.dot(U_t, spec)
+  temp = np.dot(W2,temp)
+  Broadening = np.dot(V,temp)
 
   #Make Broadening function a 1d array
   spacing = xnew[2] - xnew[1]
-  xnew = numpy.arange(model.x[0], model.x[-1], spacing)
+  xnew = np.arange(model.x[0], model.x[-1], spacing)
   model_new = Model(xnew)
-  Broadening = numpy.array(Broadening)[...,0]
+  Broadening = np.array(Broadening)[...,0]
 
   
   #If we get here, the broadening function looks okay.
   #Convolve the model with the broadening function
   model = DataStructures.xypoint(x=xnew)
-  Broadened = interp(xnew, numpy.convolve(model_new,Broadening, mode="same") )
+  Broadened = interp(xnew, np.convolve(model_new,Broadening, mode="same") )
   model.y = Broadened(model.x)
   
   return FittingUtilities.RebinData(model, data.x)
@@ -101,7 +101,7 @@ def Broaden(data, model, oversampling = 5, m = 201, dimension = 15):
 
 def main4():
   linelist = "../Scripts/LineList.dat"
-  lines, strengths = numpy.loadtxt(linelist, unpack=True)
+  lines, strengths = np.loadtxt(linelist, unpack=True)
   strengths = 1.0 - strengths
 
   fname = "HIP_70384.fits"
@@ -109,23 +109,23 @@ def main4():
 
   for i, order in enumerate(orders):
     DATA = interp(order.x, order.y)
-    order.x, xspacing = numpy.linspace(order.x[0], order.x[-1], order.x.size, retstep=True)
+    order.x, xspacing = np.linspace(order.x[0], order.x[-1], order.x.size, retstep=True)
     order.y = DATA(order.x)
     order.cont = FittingUtilities.Continuum(order.x, order.y)
     
-    left = numpy.searchsorted(lines, order.x[0])
-    right = numpy.searchsorted(lines, order.x[-1])
+    left = np.searchsorted(lines, order.x[0])
+    right = np.searchsorted(lines, order.x[-1])
     print right - left + 1
     unbroadened = order.copy()
-    unbroadened.y = numpy.zeros(unbroadened.x.size)
-    unbroadened.cont = numpy.ones(unbroadened.x.size)
-    deltav = xspacing / numpy.median(order.x) * 3e5
+    unbroadened.y = np.zeros(unbroadened.x.size)
+    unbroadened.cont = np.ones(unbroadened.x.size)
+    deltav = xspacing / np.median(order.x) * 3e5
     print deltav
     factor = 10./deltav
     for j, line in enumerate(lines[left:right]):
       x = line
       y = strengths[j+left]
-      idx = numpy.searchsorted(unbroadened.x, line)
+      idx = np.searchsorted(unbroadened.x, line)
       unbroadened.y[idx] = -y*factor
     unbroadened.y += 1.0
     #model = Broaden(order, unbroadened, m=401, dimension=20)
@@ -149,9 +149,9 @@ def main3():
   modelfile = "%slte86-4.00-0.5-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
   vsini = 150.0
   beta = 1.0
-  x, y = numpy.loadtxt(modelfile, usecols=(0,1), unpack=True)
+  x, y = np.loadtxt(modelfile, usecols=(0,1), unpack=True)
   MODEL = interp(x*units.angstrom.to(units.nm)/1.00026, 10**y)
-  xlin = numpy.linspace(x[0], x[-1], x.size)
+  xlin = np.linspace(x[0], x[-1], x.size)
   #model = DataStructures.xypoint(x=xlin, y=MODEL(xlin))
   #model = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026, y=10**y)
   #model.cont = FittingUtilities.Continuum(model.x, model.y, fitorder=15, lowreject=1.5, highreject=10)
@@ -162,10 +162,10 @@ def main3():
 
   for i, order in enumerate(orders):
     DATA = interp(order.x, order.y)
-    xlin = numpy.linspace(order.x[0], order.x[-1], order.x.size)
+    xlin = np.linspace(order.x[0], order.x[-1], order.x.size)
     order = DataStructures.xypoint(x=xlin, y=DATA(xlin))
     order.cont = FittingUtilities.Continuum(order.x, order.y)
-    extended = numpy.append( numpy.append(order.y[::-1]/order.cont[::-1], order.y/order.cont), order.y[::-1]/order.cont[::-1])
+    extended = np.append( np.append(order.y[::-1]/order.cont[::-1], order.y/order.cont), order.y[::-1]/order.cont[::-1])
     plt.plot(order.x, order.y)
     plt.plot(order.x, order.cont)
     plt.show()
@@ -179,20 +179,20 @@ def main3():
     plt.show()
 
     #Fit broadening
-    #left = numpy.searchsorted(model.x, 2*order.x[0] - order.x[-1])
-    #right = numpy.searchsorted(model.x, 2*order.x[-1] - order.x[0])
+    #left = np.searchsorted(model.x, 2*order.x[0] - order.x[-1])
+    #right = np.searchsorted(model.x, 2*order.x[-1] - order.x[0])
     #unbroadened = model[left:right]
     size = unbroadened.size()
     
     #model2 = Broaden(order, unbroadened, m=401, dimension=20)
     #model2 = FittingUtilities.RebinData(model2, order.x)
-    ycorr = numpy.correlate(extended-1.0, unbroadened.y/unbroadened.cont-1.0, mode='same')[size:-size]
+    ycorr = np.correlate(extended-1.0, unbroadened.y/unbroadened.cont-1.0, mode='same')[size:-size]
     #ycorr -= ycorr.min()
     plt.plot(ycorr)
     plt.show()
 
     model2 = order.copy()
-    model2.y = numpy.correlate(extended, ycorr/ycorr.sum(), mode='same')[size:-size]
+    model2.y = np.correlate(extended, ycorr/ycorr.sum(), mode='same')[size:-size]
     
     model2.cont = FittingUtilities.Continuum(model2.x, model2.y, lowreject=1.5, highreject=10)
     model2.y = (model2.y/model2.cont-1)*10.0 + model2.cont
@@ -215,7 +215,7 @@ def main2():
   modelfile = "%slte86-4.00+0.5-alpha0.KURUCZ_MODELS.dat.sorted" %model_dir
   vsini = 150.0
   beta = 1.0
-  x, y = numpy.loadtxt(modelfile, usecols=(0,1), unpack=True)
+  x, y = np.loadtxt(modelfile, usecols=(0,1), unpack=True)
   model = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026, y=10**y)
   model.cont = FittingUtilities.Continuum(model.x, model.y, fitorder=15, lowreject=1.5, highreject=10)
   #model2 = RotBroad.Broaden(model, vsini*units.km.to(units.cm))
@@ -227,8 +227,8 @@ def main2():
     order.cont = FittingUtilities.Continuum(order.x, order.y)
 
     #Fit broadening
-    left = numpy.searchsorted(model.x, 2*order.x[0] - order.x[-1])
-    right = numpy.searchsorted(model.x, 2*order.x[-1] - order.x[0])
+    left = np.searchsorted(model.x, 2*order.x[0] - order.x[-1])
+    right = np.searchsorted(model.x, 2*order.x[-1] - order.x[0])
     unbroadened = model[left:right]
     pars = [vsini, beta]
     grid = [[120, 200, 10],
@@ -352,7 +352,7 @@ def main1():
     for logg in file_dict[T]:
       for Z in file_dict[T][logg]:
         print "Reading file %s" %file_dict[T][logg][Z]
-        x, y = numpy.loadtxt(model_dir + file_dict[T][logg][Z], usecols=(0,1), unpack=True)
+        x, y = np.loadtxt(model_dir + file_dict[T][logg][Z], usecols=(0,1), unpack=True)
         #model_dict[T][logg][Z] = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026,
         #                                                y=10**y)
         model = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026, y=10**y)
@@ -387,7 +387,7 @@ def main1():
             rv.append(-offset/order.x.mean() * constants.c.cgs.value)
 
           #Apply the median rv to all, and determine X^2
-          rv = numpy.median(rv)
+          rv = np.median(rv)
           chisq = 0.0
           norm = 0.0
           for order in orders:
@@ -400,7 +400,7 @@ def main1():
               model = FittingUtilities.ReduceResolution(model, 60000)
               model.y *= model.cont
             model.y *= model.cont
-            chisq += numpy.sum( (order.y - model.y/model.cont*order.cont)**2 / order.err**2 )
+            chisq += np.sum( (order.y - model.y/model.cont*order.cont)**2 / order.err**2 )
             norm += order.size()
             #plt.plot(order.x, order.y/order.cont, 'k-')
             #plt.plot(model.x, model.y/model.cont, 'r-')
@@ -454,7 +454,7 @@ def main5():
     #orders[i].y /= smoothed
     column = {"wavelength": order.x,
               "flux": order.y/smoothed,
-              "continuum": numpy.ones(order.x.size),
+              "continuum": np.ones(order.x.size),
               "error": order.err}
     column_list.append(column)
   plt.show()

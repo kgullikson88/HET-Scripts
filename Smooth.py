@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 #import FitsUtils
 import FittingUtilities
 import HelperFunctions
@@ -59,7 +59,7 @@ def GPSmooth(data, low=0.1, high=10, debug=False):
     data.y[outliers] = smoothed.y[outliers]
     
   gp = GaussianProcess(corr='squared_exponential',
-                       theta0 = numpy.sqrt(low*high),
+                       theta0 = np.sqrt(low*high),
                        thetaL = low,
                        thetaU = high,
                        normalize = False,
@@ -119,10 +119,10 @@ if __name__ == "__main__":
     for i, order in enumerate(orders):
       print "Smoothing order %i/%i" %(i+1, len(orders))
       #Fix errors
-      order.err[order.err > 1e8] = numpy.sqrt(order.y[order.err > 1e8])
+      order.err[order.err > 1e8] = np.sqrt(order.y[order.err > 1e8])
 
       #Linearize
-      xgrid = numpy.linspace(order.x[0], order.x[-1], order.x.size)
+      xgrid = np.linspace(order.x[0], order.x[-1], order.x.size)
       order = FittingUtilities.RebinData(order, xgrid)
       
       dx = order.x[1] - order.x[0]
@@ -156,7 +156,7 @@ if __name__ == "__main__":
         plt.figure(2)
         plt.plot(order.x, order.y/denoised.y)
         plt.title(starname)
-        #plt.plot(order.x, (order.y-denoised.y)/numpy.median(order.y))
+        #plt.plot(order.x, (order.y-denoised.y)/np.median(order.y))
         #plt.show()
     if plot:
       plt.show()

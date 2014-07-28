@@ -1,5 +1,5 @@
 import FitsUtils
-import numpy
+import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import HelperFunctions
@@ -45,17 +45,17 @@ class Trimmer:
     self.clicks.append(event.xdata)
 
     if len(self.clicks) == 2:
-      left = max(0, numpy.searchsorted(self.data.x, min(self.clicks)))
-      right = min(self.data.size()-1, numpy.searchsorted(self.data.x, max(self.clicks)))
+      left = max(0, np.searchsorted(self.data.x, min(self.clicks)))
+      right = min(self.data.size()-1, np.searchsorted(self.data.x, max(self.clicks)))
 
       
       logfile = open("trimlog.dat", "a")
       if self.clipmode == "remove":
         logfile.write("Removing:\t%.3f  to %.3f\n" %(min(self.clicks), max(self.clicks)))
-        self.data.x = numpy.delete(self.data.x, numpy.arange(left,right+1))
-        self.data.y = numpy.delete(self.data.y, numpy.arange(left,right+1))
-        self.data.cont = numpy.delete(self.data.cont, numpy.arange(left,right+1))
-        self.data.err = numpy.delete(self.data.err, numpy.arange(left,right+1))
+        self.data.x = np.delete(self.data.x, np.arange(left,right+1))
+        self.data.y = np.delete(self.data.y, np.arange(left,right+1))
+        self.data.cont = np.delete(self.data.cont, np.arange(left,right+1))
+        self.data.err = np.delete(self.data.err, np.arange(left,right+1))
       elif self.clipmode == "interpolate":
         logfile.write("Interpolating:\t%.3f  to %.3f\n" %(min(self.clicks), max(self.clicks)))
         x1, x2 = self.data.x[left], self.data.x[right]
@@ -85,8 +85,8 @@ def main1():
     orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", errors="error", cont="continuum")
     for i, order in enumerate(orders):
       if i in trimming.keys():
-        left = numpy.searchsorted(order.x, trimming[i][0])
-        right = numpy.searchsorted(order.x, trimming[i][1])
+        left = np.searchsorted(order.x, trimming[i][0])
+        right = np.searchsorted(order.x, trimming[i][1])
         order.x = order.x[left:right]
         order.y = order.y[left:right]
         order.cont = order.cont[left:right]
@@ -161,12 +161,12 @@ def Automatic():
     for i, order in enumerate(orders):
       order = order[trimsize:-trimsize]
       for badsection in badwaves:
-        left = numpy.searchsorted(order.x, badsection[0])
-        right = numpy.searchsorted(order.x, badsection[1])
-        order.x = numpy.delete(order.x, numpy.arange(left, right))
-        order.y = numpy.delete(order.y, numpy.arange(left, right))
-        order.cont = numpy.delete(order.cont, numpy.arange(left, right))
-        order.err = numpy.delete(order.err, numpy.arange(left, right))
+        left = np.searchsorted(order.x, badsection[0])
+        right = np.searchsorted(order.x, badsection[1])
+        order.x = np.delete(order.x, np.arange(left, right))
+        order.y = np.delete(order.y, np.arange(left, right))
+        order.cont = np.delete(order.cont, np.arange(left, right))
+        order.err = np.delete(order.err, np.arange(left, right))
       
       columns = {"wavelength": order.x,
                  "flux": order.y,

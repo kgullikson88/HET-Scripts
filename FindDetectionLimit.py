@@ -12,7 +12,7 @@ import FitsUtils
 import matplotlib.pyplot as plt
 import Correlate
 from astropy import units
-import numpy
+import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline as interp
 import FindContinuum
 
@@ -44,7 +44,7 @@ if __name__ == "__main__":
   snrs = [1,2,3,4,5,10,20, 50, 100, 200, 300, 500, 1000]
   
   #Read in the model
-  x,y = numpy.loadtxt(model_dir + modelfile, usecols=(0,1), unpack=True)
+  x,y = np.loadtxt(model_dir + modelfile, usecols=(0,1), unpack=True)
   model = DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026, y=10**y)
   
   #Make lists for Correlate.PyCorr2
@@ -62,19 +62,19 @@ if __name__ == "__main__":
       DATA = interp(order.x, order.y)
       CONT = interp(order.x, order.cont)
       ERROR = interp(order.x, order.err)
-      order.x = numpy.linspace(order.x[trimsize], order.x[-trimsize], order.size() - 2*trimsize)
+      order.x = np.linspace(order.x[trimsize], order.x[-trimsize], order.size() - 2*trimsize)
       order.y = DATA(order.x)
       order.cont = CONT(order.x)
       order.err = ERROR(order.x)
       
       #Remove bad regions from the data
       for region in badregions:
-        left = numpy.searchsorted(order.x, region[0])
-        right = numpy.searchsorted(order.x, region[1])
-        order.x = numpy.delete(order.x, numpy.arange(left, right))
-        order.y = numpy.delete(order.y, numpy.arange(left, right))
-        order.cont = numpy.delete(order.cont, numpy.arange(left, right))
-        order.err = numpy.delete(order.err, numpy.arange(left, right))
+        left = np.searchsorted(order.x, region[0])
+        right = np.searchsorted(order.x, region[1])
+        order.x = np.delete(order.x, np.arange(left, right))
+        order.y = np.delete(order.y, np.arange(left, right))
+        order.cont = np.delete(order.cont, np.arange(left, right))
+        order.err = np.delete(order.err, np.arange(left, right))
 
       #Remove whole order if it is too small
       if order.x.size > 10:
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     for snr in snrs:
       orders2 = [order.copy() for order in orders]
       for i, order in enumerate(orders2):
-        noise = numpy.random.normal(loc=0.0, scale=1.0/float(snr), size=order.x.size)
+        noise = np.random.normal(loc=0.0, scale=1.0/float(snr), size=order.x.size)
         orders2[i].y += order.cont*noise
       
       """

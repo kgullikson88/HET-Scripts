@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import scipy.signal as sig
 from scipy.interpolate import InterpolatedUnivariateSpline as interp
 import matplotlib.pyplot as plt
@@ -32,7 +32,7 @@ def LowPass():
       datafcn = interp(order.x, order.y, k=1)
       errorfcn = interp(order.x, order.err, k=1)
       linear = DataStructures.xypoint(order.x.size)
-      linear.x = numpy.linspace(order.x[0], order.x[-1], linear.size())
+      linear.x = np.linspace(order.x[0], order.x[-1], linear.size())
       linear.y = datafcn(linear.x)
       linear.err = errorfcn(linear.x)
       smoothed = HelperFunctions.LowPassFilter(linear, 50*units.km.to(units.cm))
@@ -73,22 +73,22 @@ def HighPass():
       datafcn = interp(order.x, order.y, k=1)
       errorfcn = interp(order.x, order.err, k=1)
       linear = DataStructures.xypoint(order.x.size)
-      linear.x = numpy.linspace(order.x[0], order.x[-1], linear.size())
+      linear.x = np.linspace(order.x[0], order.x[-1], linear.size())
       linear.y = datafcn(linear.x)
       linear.err = errorfcn(linear.x)
       linear.cont = FittingUtilities.Continuum(linear.x, linear.y)
       smoothed = HelperFunctions.HighPassFilter(linear, vsini*units.km.to(units.cm))
-      mean = numpy.mean(smoothed)
-      std = numpy.std(smoothed)
-      badindices = numpy.where(numpy.abs((smoothed-mean)/std > 3.0))[0]
+      mean = np.mean(smoothed)
+      std = np.std(smoothed)
+      badindices = np.where(np.abs((smoothed-mean)/std > 3.0))[0]
       plt.figure(2)
       plt.plot(linear.x, (smoothed-mean)/std)
       plt.figure(3)
       plt.plot(linear.x, linear.y-smoothed)
       plt.figure(1)
       smoothed[badindices] = 0.0
-      smoothed += numpy.median(linear.cont)
-      smoothed /= numpy.median(linear.cont)
+      smoothed += np.median(linear.cont)
+      smoothed /= np.median(linear.cont)
       #linear.y[badindices] = smoothed[badindices]
       mainaxis.plot(linear.x, linear.y/linear.cont, 'k-')
       mainaxis.plot(linear.x, smoothed, 'r-', linewidth=1)

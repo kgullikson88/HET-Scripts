@@ -3,7 +3,7 @@ import FindContinuum
 from astropy.io import fits as pyfits
 import sys
 import os
-import numpy
+import numpy as np
 import pylab
 import HelperFunctions
 
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     column_list = []
     for i, order in enumerate(orders):
       #This data is weird. Some parts of the extracted spectra have 0 flux on the edges
-      goodindices = numpy.where(order.y > 1e-4)[0]
+      goodindices = np.where(order.y > 1e-4)[0]
       if goodindices.size < 2:
         continue
       left, right = goodindices[0], goodindices[-1]

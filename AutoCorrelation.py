@@ -1,6 +1,6 @@
 import Correlate
 import FitsUtils
-import numpy
+import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline as interp
 import os
 import sys
@@ -168,7 +168,7 @@ for fname in model_list:
     gravity = float(fname.split("lte")[-1][3:7])
     metallicity = float(fname.split("lte")[-1][7:11])
   print "Reading in file %s" %fname
-  x,y = numpy.loadtxt(fname, usecols=(0,1), unpack=True)
+  x,y = np.loadtxt(fname, usecols=(0,1), unpack=True)
   model_data.append( DataStructures.xypoint(x=x*units.angstrom.to(units.nm)/1.00026, y=10**y) )
   star_list.append(str(temp))
   temp_list.append(temp)
@@ -206,19 +206,19 @@ if __name__ == "__main__":
       DATA = interp(order.x, order.y)
       CONT = interp(order.x, order.cont)
       ERROR = interp(order.x, order.err)
-      order.x = numpy.linspace(order.x[trimsize], order.x[-trimsize], order.size() - 2*trimsize)
+      order.x = np.linspace(order.x[trimsize], order.x[-trimsize], order.size() - 2*trimsize)
       order.y = DATA(order.x)
       order.cont = CONT(order.x)
       order.err = ERROR(order.x)
       
       #Remove bad regions from the data
       for region in badregions:
-        left = numpy.searchsorted(order.x, region[0])
-        right = numpy.searchsorted(order.x, region[1])
-        order.x = numpy.delete(order.x, numpy.arange(left, right))
-        order.y = numpy.delete(order.y, numpy.arange(left, right))
-        order.cont = numpy.delete(order.cont, numpy.arange(left, right))
-        order.err = numpy.delete(order.err, numpy.arange(left, right))
+        left = np.searchsorted(order.x, region[0])
+        right = np.searchsorted(order.x, region[1])
+        order.x = np.delete(order.x, np.arange(left, right))
+        order.y = np.delete(order.y, np.arange(left, right))
+        order.cont = np.delete(order.cont, np.arange(left, right))
+        order.err = np.delete(order.err, np.arange(left, right))
 
       #Remove whole order if it is too small
       if order.x.size > 10:

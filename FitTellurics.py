@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import sys
 import os
 import matplotlib.pyplot as plt
@@ -128,8 +128,8 @@ if __name__ == "__main__":
         t = segments[0]
         t_seg = t.split(":")
         weather_time = 3600*float(t_seg[0]) + 60*float(t_seg[1]) + float(t_seg[2])
-        if numpy.abs(time - weather_time) < difference:
-          difference = numpy.abs(time - weather_time)
+        if np.abs(time - weather_time) < difference:
+          difference = np.abs(time - weather_time)
           bestindex = idx
         times.append(segments[0])
         T.append(float(segments[3]))
@@ -185,7 +185,7 @@ if __name__ == "__main__":
       fitter.AdjustValue({"wavestart": order.x[0] - 20.0,
                           "waveend": order.x[-1] + 20.0})
       order.cont = FittingUtilities.Continuum(order.x, order.y, fitorder=3, lowreject=1.5, highreject=10)
-      primary = DataStructures.xypoint(x=order.x, y=numpy.ones(order.x.size))
+      primary = DataStructures.xypoint(x=order.x, y=np.ones(order.x.size))
       primary, model, R = fitter.Fit(data=order.copy(), 
                                      resolution_fit_mode="gauss", 
                                      fit_source=True, 
@@ -201,8 +201,8 @@ if __name__ == "__main__":
       chisquared.append((1.0-min(model.y))/fitter.chisq_vals[-1])
 
     # Determine the average humidity (weight by chi-squared)
-    humidity = numpy.sum(numpy.array(h2o)*numpy.array(chisquared)) / numpy.sum(chisquared)
-    temperature = numpy.sum(numpy.array(T)*numpy.array(chisquared)) / numpy.sum(chisquared)
+    humidity = np.sum(np.array(h2o)*np.array(chisquared)) / np.sum(chisquared)
+    temperature = np.sum(np.array(T)*np.array(chisquared)) / np.sum(chisquared)
     logfile.write("Humidity/Temperature values and their chi-squared values:\n")
     for h, t, c in zip(h2o, T, chisquared):
       logfile.write("%g\t%g\t%g\n" %(h, t, 1.0/c))
@@ -219,7 +219,7 @@ if __name__ == "__main__":
       fitter.AdjustValue({"wavestart": order.x[0] - 20.0,
                           "waveend": order.x[-1] + 20.0})
       order.cont = FittingUtilities.Continuum(order.x, order.y, fitorder=3, lowreject=1.5, highreject=10)
-      primary = DataStructures.xypoint(x=order.x, y=numpy.ones(order.x.size))
+      primary = DataStructures.xypoint(x=order.x, y=np.ones(order.x.size))
       primary, model, R = fitter.Fit(data=order.copy(), 
                                      resolution_fit_mode="gauss", 
                                      fit_source=True,
@@ -234,21 +234,21 @@ if __name__ == "__main__":
       chisquared.append((1.0-min(model.y))/fitter.chisq_vals[-1])
 
     # Determine the average of the other parameter values
-    chi2 = numpy.array(chisquared)
-    o2 = numpy.array(o2)
-    resolution = numpy.array(resolution)
-    waveshifts = numpy.array(waveshifts)
-    wave0 = numpy.array(wave0)
+    chi2 = np.array(chisquared)
+    o2 = np.array(o2)
+    resolution = np.array(resolution)
+    waveshifts = np.array(waveshifts)
+    wave0 = np.array(wave0)
     velshifts = waveshifts/wave0 * constants.c.cgs.value*units.cm.to(units.km)
-    vel = numpy.sum(velshifts*chi2) / numpy.sum(chi2)
+    vel = np.sum(velshifts*chi2) / np.sum(chi2)
     logfile.write("resolution, velocity shifts and their chi-squared\n")
     for R, v, c in zip(resolution, velshifts, chi2):
       logfile.write("%g\t%g\t%g\n" %(R, v, 1.0/c))
     logfile.write("O2 abundance and their chi-squared:\n")
     for o, c in zip(o2, chi2[-2:]):
       logfile.write("%g\t%g\n" %(o, 1.0/c))
-    o2 = numpy.sum(o2*chi2[-2:])/numpy.sum(chi2[-2:])
-    resolution = numpy.sum(resolution*chi2)/numpy.sum(chi2)
+    o2 = np.sum(o2*chi2[-2:])/np.sum(chi2[-2:])
+    resolution = np.sum(resolution*chi2)/np.sum(chi2)
     logfile.write("Best o2 = %.4f ppmv\n" %o2)
     logfile.write("Best resolution = %.5f\n" %resolution)
     logfile.write("Best velocity shift = %.4f km/s" %vel)
@@ -264,9 +264,9 @@ if __name__ == "__main__":
     for i, order in enumerate(orders):
       if (order.x[0] < 470 and order.x[-1] > 470) or max(order.y) < 0.01:
         model = order.copy()
-        model.y = numpy.ones(order.size())
+        model.y = np.ones(order.size())
         data = order.copy()
-        data.cont = numpy.ones(data.size())
+        data.cont = np.ones(data.size())
       else:
         print "\n\nGenerating model for order %i of %i\n" %(i, len(orders))
         fitter.AdjustValue({"wavestart": order.x[0] - 5.0,

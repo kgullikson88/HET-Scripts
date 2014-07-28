@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import sys
 import FitsUtils
 import FindContinuum
-import numpy
+import numpy as np
 
 
 if __name__ == "__main__":

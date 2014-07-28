@@ -1,6 +1,6 @@
 import Correlate
 import FitsUtils
-import numpy
+import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline as interp
 import os
 import sys
@@ -222,8 +222,8 @@ if __name__ == "__main__":
     
     #Remove bad regions from the data
     for region in badregions:
-      left = numpy.searchsorted(data.x, region[0])
-      right = numpy.searchsorted(data.x, region[1])
+      left = np.searchsorted(data.x, region[0])
+      right = np.searchsorted(data.x, region[1])
       data.y[left:right] = data.cont[left:right]
     #plt.plot(data.x, data.y/data.cont)
     #plt.show()

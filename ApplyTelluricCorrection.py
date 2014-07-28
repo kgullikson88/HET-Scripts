@@ -8,7 +8,7 @@ import DataStructures
 import os
 import FindContinuum
 import FittingUtilities
-import numpy
+import numpy as np
 import HelperFunctions
 import MakeModel
 import warnings
@@ -44,9 +44,9 @@ def FitGaussian(data):
   w0 = data.x[data.y == min(data.y)]
   Baseline = 1.0
   pars = [A, w0, sigma, Baseline]
-  gauss = lambda x, pars: pars[3] - pars[0]*numpy.exp(-(x-pars[1])**2/(2*pars[2]**2))
+  gauss = lambda x, pars: pars[3] - pars[0]*np.exp(-(x-pars[1])**2/(2*pars[2]**2))
   errfcn = lambda pars, d: gauss(d.x, pars) - d.y
-  pars, success = leastsq(errfcn, pars, args=(data), diag=1.0/numpy.array(pars), epsfcn=1e-10)
+  pars, success = leastsq(errfcn, pars, args=(data), diag=1.0/np.array(pars), epsfcn=1e-10)
   #if A > 0.7:
   #  data.output("Testdata.dat")
   #  sys.exit()
@@ -54,16 +54,16 @@ def FitGaussian(data):
 
 
 def WavelengthErrorFunction(pars, wavelengths, offsets, weights, maxdiff):
-  fcn = numpy.poly1d(pars)
+  fcn = np.poly1d(pars)
   prediction = fcn(wavelengths)
-  penalty = numpy.sum(numpy.abs(prediction[numpy.abs(prediction) > maxdiff]))
+  penalty = np.sum(np.abs(prediction[np.abs(prediction) > maxdiff]))
   return (offsets - prediction)**2 + penalty
 
 
 def FitPoly(wavelengths, offsets, weights, maxdiff=0.5, fitorder=3):
-  pars = numpy.zeros(fitorder+1)
+  pars = np.zeros(fitorder+1)
   pars, success = leastsq(WavelengthErrorFunction, pars, args=(wavelengths, offsets, weights, maxdiff))
-  return numpy.poly1d(pars)
+  return np.poly1d(pars)
 
 
 def FixWavelength(data, model, fitorder=3, tol=20, numiters=5):
@@ -71,13 +71,13 @@ def FixWavelength(data, model, fitorder=3, tol=20, numiters=5):
   linelist = FittingUtilities.FindLines(model, debug=False, tol=0.985, linespacing=0.05)
   linelist = model.x[linelist]
 
-  gauss = lambda x, pars: pars[3] - pars[0]*numpy.exp(-(x-pars[1])**2/(2*pars[2]**2))
+  gauss = lambda x, pars: pars[3] - pars[0]*np.exp(-(x-pars[1])**2/(2*pars[2]**2))
 
   model_lines = []
   dx = []
   #Loop over lines
   for line in linelist:
-    idx = numpy.searchsorted(model.x, line)
+    idx = np.searchsorted(model.x, line)
     if idx < tol or model.size() - idx < tol:
       continue
     pars, model_success = FitGaussian(model[idx-tol:idx+tol])
@@ -86,7 +86,7 @@ def FixWavelength(data, model, fitorder=3, tol=20, numiters=5):
     else:
       continue
 
-    idx = numpy.searchsorted(data.x, line)
+    idx = np.searchsorted(data.x, line)
     pars, data_success = FitGaussian(data[idx-tol:idx+tol])
     if data_success < 5 and pars[0] > 0 and pars[0] < 1:
       dx.append(pars[1] - model_lines[-1])
@@ -94,13 +94,13 @@ def FixWavelength(data, model, fitorder=3, tol=20, numiters=5):
       model_lines.pop()
       
 
-  model_lines = numpy.array(model_lines)
-  dx = numpy.array(dx)
+  model_lines = np.array(model_lines)
+  dx = np.array(dx)
 
-  mean, std = numpy.mean(dx), numpy.std(dx)
-  badindices = numpy.where(numpy.abs(dx) > 0.01)[0]
-  model_lines = numpy.delete(model_lines, badindices)
-  dx = numpy.delete(dx, badindices)
+  mean, std = np.mean(dx), np.std(dx)
+  badindices = np.where(np.abs(dx) > 0.01)[0]
+  model_lines = np.delete(model_lines, badindices)
+  dx = np.delete(dx, badindices)
 
   print "Found %i lines" %len(model_lines)
   if len(model_lines) < 3*fitorder:
@@ -116,14 +116,14 @@ def FixWavelength(data, model, fitorder=3, tol=20, numiters=5):
   while not done and len(model_lines) >= fitorder and iternum < numiters:
     iternum += 1
     done = True
-    fit = numpy.poly1d(numpy.polyfit(model_lines - mean, dx, fitorder))
+    fit = np.poly1d(np.polyfit(model_lines - mean, dx, fitorder))
     residuals = fit(model_lines-mean) - dx
-    std = numpy.std(residuals)
-    badindices = numpy.where(numpy.abs(residuals) > 3*std)[0]
+    std = np.std(residuals)
+    badindices = np.where(np.abs(residuals) > 3*std)[0]
     if badindices.size > 0 and model_lines.size - badindices.size > 2*fitorder:
       done = False
-      model_lines = numpy.delete(model_lines, badindices)
-      dx = numpy.delete(dx, badindices)
+      model_lines = np.delete(model_lines, badindices)
+      dx = np.delete(dx, badindices)
   return lambda x: x + fit(x-mean), 0
   
 
@@ -153,23 +153,23 @@ def Correct(original, corrected, offset=None, plot=True, get_primary=False):
       if i == 0:
         print "Order = %i\nHumidity: %g\nO2 concentration: %g\n" %(i, header['h2oval'], header['o2val'])
     except IndexError:
-      model = DataStructures.xypoint(x=data.x, y=numpy.ones(data.x.size))
-      #primary = DataStructures.xypoint(x=data.x, y=numpy.ones(data.x.size))
+      model = DataStructures.xypoint(x=data.x, y=np.ones(data.x.size))
+      #primary = DataStructures.xypoint(x=data.x, y=np.ones(data.x.size))
       print "Warning!!! Telluric Model not found for order %i" %i
     primary = data.copy()
     primary.y = FittingUtilities.Iterative_SV(data.y/model.y, 51, 3)
 
     
     if model.size() < data.size():
-      left = numpy.searchsorted(data.x, model.x[0])
-      right = numpy.searchsorted(data.x, model.x[-1])
+      left = np.searchsorted(data.x, model.x[0])
+      right = np.searchsorted(data.x, model.x[-1])
       if right < data.size():
         right += 1
       data = data[left:right]
     elif model.size() > data.size():
       sys.exit("Error! Model size (%i) is larger than data size (%i)" %(model.size(), data.size()))
 
-    #if numpy.sum((model.x-data.x)**2) > 1e-8:
+    #if np.sum((model.x-data.x)**2) > 1e-8:
     #  model = FittingUtilities.RebinData(model, data.x)
 
     #Adjust the wavelength calibration if necessary
@@ -202,7 +202,7 @@ def Correct(original, corrected, offset=None, plot=True, get_primary=False):
       ax.plot(model.x, model.y)
       
     data.y[data.y/data.cont < 1e-5] = 1e-5*data.cont[data.y/data.cont < 1e-5]
-    badindices = numpy.where(numpy.logical_or(data.y <= 0, model.y < 0.05))[0]
+    badindices = np.where(np.logical_or(data.y <= 0, model.y < 0.05))[0]
     model.y[badindices] = data.y[badindices]/data.cont[badindices]
     
     data.y /= model.y

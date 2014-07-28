@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import os
@@ -37,20 +37,20 @@ if __name__ == "__main__":
     logg = []
     metal = []
     for fname in files:
-      vels, corr = numpy.loadtxt(Corr_dir + fname, unpack=True)
-      fit = numpy.poly1d( numpy.polyfit(vels, corr, 2) )
-      std = numpy.std(corr - fit(vels))
-      index = numpy.searchsorted(vels, velocity)
+      vels, corr = np.loadtxt(Corr_dir + fname, unpack=True)
+      fit = np.poly1d( np.polyfit(vels, corr, 2) )
+      std = np.std(corr - fit(vels))
+      index = np.searchsorted(vels, velocity)
       index = min(index, vels.size - 1)
       print fname
       Temperatures.append(float(fname.split("_")[-1].split("K")[0]))
       logg.append(float(fname.split("K")[-1][:4]))
       metal.append(float(fname[-4:]))
       Significances.append((corr[index] - fit(vels[index]))/std)
-    Temperatures = numpy.array(Temperatures)
-    Significances = numpy.array(Significances)
-    logg = numpy.array(logg)
-    metal = numpy.array(metal)
+    Temperatures = np.array(Temperatures)
+    Significances = np.array(Significances)
+    logg = np.array(logg)
+    metal = np.array(metal)
     sorter = sorted(range(len(Temperatures)),key=lambda x:Temperatures[x])
     T = Temperatures[sorter]
     S = Significances[sorter]
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     plt.title("vsini = %g" %val)
 
     #Find the maximum value
-    maxindex = numpy.argmax(S)
+    maxindex = np.argmax(S)
     Tmax = Temperatures[maxindex]
     loggmax = G[maxindex]
     metalmax = Z[maxindex]
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     modelstart = "lte%.2i-%.2f%+.1f" %(Tmax/100.0, loggmax, metalmax)
     modelfile = [f for f in modelfiles if f.startswith(modelstart)][0]
     #modelfile = "lte40-4.0+0.5.Cond.PHOENIX2004.tab.7.sorted"
-    x,y = numpy.loadtxt("%s%s" %(model_dir, modelfile), usecols=(0,1), unpack=True)
+    x,y = np.loadtxt("%s%s" %(model_dir, modelfile), usecols=(0,1), unpack=True)
     x *= units.angstrom.to(units.nm)
     #x /= 1.00026
     x *= 1 - velocity*units.km.to(units.cm) / constants.c.cgs.value
@@ -88,8 +88,8 @@ if __name__ == "__main__":
     if filename in os.listdir("./"):
       orders = FitsUtils.MakeXYpoints(filename, extensions=True, x="wavelength", y="flux", cont="continuum", errors="error")
       for order in orders:
-        #left = numpy.searchsorted(model.x, order.x[0])
-        #right = numpy.searchsorted(model.x, order.x[-1])
+        #left = np.searchsorted(model.x, order.x[0])
+        #right = np.searchsorted(model.x, order.x[-1])
         #segment = DataStructures.xypoint(x=model.x[left:right], y=model.y[left:right])
         segment = FittingUtilities.RebinData(model, order.x)
         segment.cont = FindContinuum.Continuum(segment.x, segment.y)

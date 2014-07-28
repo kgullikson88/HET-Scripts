@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import sys
 import FitsUtils
 import FindContinuum
-import numpy
+import numpy as np
 
 
 if __name__ == "__main__":
@@ -43,7 +43,7 @@ if __name__ == "__main__":
       
       #order.cont = FindContinuum.Continuum(order.x, order.y, lowreject=3, highreject=3)
       if pixelscale:
-        order.x = numpy.arange(order.size())
+        order.x = np.arange(order.size())
       if tellurics:
         plt.plot(order.x, order.y/order.cont, 'k-')
         plt.plot(order.x, model[i].y, 'r-')
