@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../General/.idea/General.iml" filepath="$PROJECT_DIR$/../General/.idea/General.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/HET-Scripts.iml" filepath="$PROJECT_DIR$/.idea/HET-Scripts.iml" />
       <module fileurl="file://$PROJECT_DIR$/../Telluric-Fitter/.idea/Telluric-Fitter.iml" filepath="$PROJECT_DIR$/../Telluric-Fitter/.idea/Telluric-Fitter.iml" />
     </modules>
