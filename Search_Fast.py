@@ -29,13 +29,13 @@ badregions = [[585.4, 595],
               [627.5, 632],
               [686, 706],
               [759, 9e9],
-	      [655, 657],   #H alpha
-	      [485, 487],   #H beta
-	      [433, 435],   #H gamma
-	      [409, 411],   #H delta
-	      [396, 398],   #H epsilon
-	      [388, 390],   #H zeta
-	      ]
+              [655, 657],   #H alpha
+              [485, 487],   #H beta
+              [433, 435],   #H gamma
+              [409, 411],   #H delta
+              [396, 398],   #H epsilon
+              [388, 390],   #H zeta
+              ]
 
 
 #Define the amount to trim from either side of every order
@@ -180,7 +180,7 @@ if __name__ == "__main__":
 
 
 
-def Process_Data(fname, extensions=True, trimsize=10):
+def Process_Data(fname, extensions=True, trimsize=100):
   if extensions:
     orders = HelperFunctions.ReadExtensionFits(fname)
           
@@ -263,7 +263,7 @@ if __name__ == "__main__":
       for metallicity in sorted(modeldict[temp][gravity].keys()):
         for vsini in vsini_values:
           for fname in fileList:
-	    print "Processing %s" %fname
+            print "Processing %s" %fname
             orders = Process_Data(fname, extensions=True)
 
             output_dir = "Cross_correlations/"
