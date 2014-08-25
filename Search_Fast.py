@@ -28,7 +28,14 @@ else:
 badregions = [[585.4, 595],
               [627.5, 632],
               [686, 706],
-              [759, 9e9]]
+              [759, 9e9],
+	      [655, 657],   #H alpha
+	      [485, 487],   #H beta
+	      [433, 435],   #H gamma
+	      [409, 411],   #H delta
+	      [396, 398],   #H epsilon
+	      [388, 390],   #H zeta
+	      ]
 
 
 #Define the amount to trim from either side of every order
@@ -173,7 +180,7 @@ if __name__ == "__main__":
 
 
 
-def Process_Data(fname, extensions=True, trimsize=100):
+def Process_Data(fname, extensions=True, trimsize=10):
   if extensions:
     orders = HelperFunctions.ReadExtensionFits(fname)
           
@@ -209,13 +216,14 @@ def Process_Data(fname, extensions=True, trimsize=100):
     #Remove whole order if it is too small
     remove = False
     if order.x.size <= 1:
+      print "Order %i too small: %i pixels" %(numorders-1-i, order.x.size)
       remove = True
     else:
       velrange = 3e5 * (numpy.median(order.x) - order.x[0]) / numpy.median(order.x)
       if velrange <= 1050.0:
+	print "velrange too small in order %i: %g km/s" %(numorders-1-i, velrange)
         remove = True
     if remove:
-      print "Removing order %i" %(numorders - 1 - i)
       orders.pop(numorders - 1 - i)
     else:
       # Find outliers from e.g. bad telluric line or stellar spectrum removal.
@@ -255,6 +263,7 @@ if __name__ == "__main__":
       for metallicity in sorted(modeldict[temp][gravity].keys()):
         for vsini in vsini_values:
           for fname in fileList:
+	    print "Processing %s" %fname
             orders = Process_Data(fname, extensions=True)
 
             output_dir = "Cross_correlations/"
