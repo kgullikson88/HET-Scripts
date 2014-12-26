@@ -3,9 +3,8 @@ import sys
 from astropy.io import fits as pyfits
 import matplotlib.pyplot as plt
 import numpy as np
-
-import FitsUtils
-import FindContinuum
+import HelperFunctions
+import FittingUtilities
 
 
 if __name__ == "__main__":
@@ -34,14 +33,13 @@ if __name__ == "__main__":
 
     for fnum, fname in enumerate(fileList):
         ls = linestyles[fnum % len(linestyles)]
-        orders = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="flux", cont="continuum",
-                                        errors="error")
+        orders = HelperFunctions.ReadExtensionFits(fname)
         print fname, len(orders)
         if not oneplot:
             plt.figure(fnum)
             plt.title(fname)
         if tellurics:
-            model = FitsUtils.MakeXYpoints(fname, extensions=True, x="wavelength", y="model")
+            model = HelperFunctions.ReadFits(fname, extensions=True, x="wavelength", y="model")
         for i, order in enumerate(orders):
 
             # order.cont = FindContinuum.Continuum(order.x, order.y, lowreject=3, highreject=3)
@@ -52,11 +50,14 @@ if __name__ == "__main__":
                 plt.plot(order.x, model[i].y, 'r-')
             else:
                 if normalize:
-                    plt.plot(order.x, order.y / order.cont)
+                    plt.plot(order.x, order.y / order.cont, 'k-')
                     plt.text(order.x.mean(), 1.1, str(i + 1))
                 else:
                     plt.plot(order.x, order.y, ls)
-                    plt.plot(order.x, order.cont)
+                    #plt.plot(order.x, order.cont)
+            plt.xlabel("Wavelength (nm)")
+            plt.ylabel("Flux")
+            plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
             if byorder:
                 plt.title("Order %i" % i)
                 plt.show()

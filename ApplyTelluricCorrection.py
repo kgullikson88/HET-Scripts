@@ -1,5 +1,5 @@
 import sys
-from scipy.interpolate import InterpolatedUnivariateSpline as interp
+from scipy.interpolate import InterpolatedUnivariateSpline as spline
 from scipy.optimize import leastsq
 import os
 import warnings
@@ -12,8 +12,6 @@ import numpy as np
 import MakeModel
 import TelluricFitter
 
-import FitsUtils
-import FindContinuum
 import HelperFunctions
 
 
@@ -101,7 +99,7 @@ def FixWavelength(data, model, fitorder=3, tol=20, numiters=5):
 
     mean, std = np.mean(dx), np.std(dx)
     badindices = np.where(np.abs(dx) > 0.01)[0]
-    model_lines = np.delete(model_lines, badindices)
+    model_lines = np.delete(model_lines, badindices)False
     dx = np.delete(dx, badindices)
 
     print "Found %i lines" % len(model_lines)
@@ -129,7 +127,7 @@ def FixWavelength(data, model, fitorder=3, tol=20, numiters=5):
     return lambda x: x + fit(x - mean), 0
 
 
-def Correct(original, corrected, offset=None, plot=True, get_primary=False):
+def Correct_HET(original, corrected, offset=None, plot=True, get_primary=False):
     #Read in the data and model
     original_orders = HelperFunctions.ReadFits(original, extensions=True, x="wavelength", y="flux", errors="error",
                                                cont="continuum")
@@ -218,9 +216,98 @@ def Correct(original, corrected, offset=None, plot=True, get_primary=False):
     return original_orders
 
 
+
+def Correct(original, corrected, offset=None, get_primary=False, interpolate=True, adjust=True, plot=False):
+    # Read in the data and model
+    original_orders = HelperFunctions.ReadFits(original, extensions=True, x="wavelength", y="flux", errors="error",
+                                               cont="continuum")
+    corrected_orders, corrected_headers = ReadCorrectedFile(corrected)
+    test_orders, header = ReadCorrectedFile(corrected, yaxis="flux")
+
+    if plot:
+        for order, model in zip(test_orders, corrected_orders):
+            plt.plot(order.x, order.y / order.cont)
+            plt.plot(model.x, model.y)
+        plt.title("Correction in corrected file only")
+        plt.show()
+
+    if get_primary:
+        primary_orders = ReadCorrectedFile(corrected, yaxis="primary")[0]
+    if offset == None:
+        offset = len(original_orders) - len(corrected_orders)
+    print "Offset = ", offset
+    for i in range(len(original_orders) - offset):
+        data = original_orders[i]
+        data.cont = FittingUtilities.Continuum(data.x, data.y)
+        try:
+            model = corrected_orders[i]
+            header = corrected_headers[i]
+            if get_primary:
+                primary = primary_orders[i]
+            if i == 0:
+                print "Order = %i\nHumidity: %g\nO2 concentration: %g\n" % (i, header['h2oval'], header['o2val'])
+        except IndexError:
+            model = DataStructures.xypoint(x=data.x, y=np.ones(data.x.size))
+            print "Warning!!! Telluric Model not found for order %i" % i
+
+        if plot:
+            plt.figure(1)
+            plt.plot(data.x, data.y / data.cont)
+            plt.plot(model.x, model.y)
+            if get_primary:
+                plt.plot(primary.x, primary.y)
+
+        if model.size() < data.size():
+            left = np.searchsorted(data.x, model.x[0])
+            right = np.searchsorted(data.x, model.x[-1])
+            if right < data.size():
+                right += 1
+            data = data[left:right]
+        elif model.size() > data.size() and not interpolate:
+            sys.exit("Error! Model size (%i) is larger than data size (%i)" % (model.size(), data.size()))
+
+        if interpolate:
+            fcn = spline(model.x, model.y, k=1)
+            model = data.copy()
+            model.y = fcn(data.x)
+            if get_primary:
+                fcn = spline(primary.x, primary.y, k=1)
+                primary = data.copy()
+                primary.y = fcn(primary.x)
+
+        data.y[data.y / data.cont < 1e-5] = 1e-5 * data.cont[data.y / data.cont < 1e-5]
+        badindices = np.where(np.logical_or(data.y <= 0, model.y < 0.05))[0]
+        model.y[badindices] = data.y[badindices] / data.cont[badindices]
+        model.y[model.y < 1e-5] = 1e-5
+
+        if get_primary:
+            data.y /= primary.y
+
+        if adjust:
+            model.cont = np.ones(model.size())
+            lines = FittingUtilities.FindLines(model, tol=0.95).astype(int)
+            if len(lines) > 5:
+                scale = np.median(np.log(data.y[lines] / data.cont[lines]) / np.log(model.y[lines]))
+            else:
+                scale = 1.0
+            print i, scale
+            model.y = model.y ** (1.0/scale)
+
+        #plt.plot(data.x, data.y / model.y)
+        data.y /= model.y
+        data.err /= model.y
+        if get_primary:
+            data.y *= primary.y
+        original_orders[i] = data.copy()
+    if plot:
+        plt.show()
+    return original_orders
+
+
+
 def main1():
-    primary = False
-    plot = False
+    primary = True
+    plot = True
     if len(sys.argv) > 2:
         original = sys.argv[1]
         corrected = sys.argv[2]
@@ -230,7 +317,7 @@ def main1():
         outfilename = "%s_telluric_corrected.fits" % (original.split(".fits")[0])
         print "Outputting to %s" % outfilename
 
-        corrected_orders = Correct(original, corrected, offset=None, get_primary=primary, plot=plot)
+        corrected_orders = Correct(original, corrected, offset=None, get_primary=primary, plot=plot, adjust=True)
 
         column_list = []
         if plot:
