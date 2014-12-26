@@ -307,7 +307,7 @@ def Correct(original, corrected, offset=None, get_primary=False, interpolate=Tru
 
 def main1():
     primary = True
-    plot = True
+    plot = False
     if len(sys.argv) > 2:
         original = sys.argv[1]
         corrected = sys.argv[2]
