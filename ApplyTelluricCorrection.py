@@ -99,7 +99,7 @@ def FixWavelength(data, model, fitorder=3, tol=20, numiters=5):
 
     mean, std = np.mean(dx), np.std(dx)
     badindices = np.where(np.abs(dx) > 0.01)[0]
-    model_lines = np.delete(model_lines, badindices)False
+    model_lines = np.delete(model_lines, badindices)
     dx = np.delete(dx, badindices)
 
     print "Found %i lines" % len(model_lines)
@@ -234,14 +234,15 @@ def Correct(original, corrected, offset=None, get_primary=False, interpolate=Tru
     if get_primary:
         primary_orders = ReadCorrectedFile(corrected, yaxis="primary")[0]
     if offset == None:
-        offset = len(original_orders) - len(corrected_orders)
+        offset = max(0, len(original_orders) - len(corrected_orders))
     print "Offset = ", offset
+    N = min(len(original_orders), len(test_orders))
     for i in range(len(original_orders) - offset):
         data = original_orders[i]
         data.cont = FittingUtilities.Continuum(data.x, data.y)
         try:
             model = corrected_orders[i]
-            header = corrected_headers[i]
+	    header = corrected_headers[i]
             if get_primary:
                 primary = primary_orders[i]
             if i == 0:

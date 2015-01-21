@@ -49,7 +49,8 @@ if __name__ == '__main__':
 	    prim_vsini.append(vsini_dict[root])
         else:
             header = fits.getheader(fname)
-            star = header['OBJECT']
+            star = header['OBJECT1']
+	    print fname, star
             v = vsini.loc[vsini.Identifier.str.strip() == star]['vsini(km/s)'].values[0]
             prim_vsini.append(float(v) * 0.8)
             vsini_dict[root] = float(v) * 0.8
@@ -64,7 +65,7 @@ if __name__ == '__main__':
 					badregions=badregions,
 					metal_values=(0.0,),
 					vsini_values=(1,),
-					#Tvalues=range(3000, 6600, 100),
+					#Tvalues=range(4100, 6900, 100),
 					observatory='McDonald',
 					debug=False,
 					vbary_correct=False,

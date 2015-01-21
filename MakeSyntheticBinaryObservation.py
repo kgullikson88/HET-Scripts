@@ -84,7 +84,7 @@ def combine(early_filename, late_filename, increase_scale=False):
     # Read in the orders for both files
     # early_orders = ConvertToExtensions.read_orders(early_filename, blazefile)
     early_orders = HelperFunctions.ReadExtensionFits(early_filename)
-    late_orders = ConvertToExtensions.read_orders(late_filename)
+    late_orders = ConvertToExtensions.read_orders(late_filename, blazefile)
 
     # Before combining, we need to adjust the scale factor for atmospheric effects (clouds, poor seeing, etc)
     scale_adjust = []
@@ -157,7 +157,9 @@ def classify_file(filename, astroquery=True):
         sim = Simbad()
         sim.add_votable_fields('plx', 'sp')
         data = sim.query_object(object)
-        plx = data['PLX_VALUE'].item()
+        plx_test = data['PLX_VALUE'].item()
+        if not np.isnan(plx_test):
+            plx = plx_test
         spt_full = data['SP_TYPE'].item()
         spt = spt_full[0] + re.search(r'\d*\.?\d*', spt_full[1:]).group()
     else:
@@ -175,7 +177,7 @@ def classify_file(filename, astroquery=True):
 
 
 if __name__ == '__main__':
-    scale = True
+    scale = False
     early, late = parse_input(sys.argv[1:])
 
     # Add each late file to all of the early-type files
