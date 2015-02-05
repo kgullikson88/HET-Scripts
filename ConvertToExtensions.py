@@ -1,10 +1,9 @@
 import sys
 import os
-
 import FittingUtilities
+
 from astropy.io import fits as pyfits
 import numpy as np
-
 import HelperFunctions
 
 
@@ -49,8 +48,16 @@ def read_orders(fname, blazefile=None):
     # Trim the data
     order_list = []
     for i, order in enumerate(orders):
+        # Check for zero values
+        goodindices = np.where(order.y > 1e-4)[0]
+        if goodindices.size < 2:
+            continue
+        left = max(goodindices[0], left_trim)
+        right = min(goodindices[-1], order.size() - right_trim)
+        order = order[left:right]
+        if blazefile is not None:
+            blaze[i].y = blaze[i].y[left:right]
 
-        left, right = left_trim, order.size() - right_trim
         if i in bad_regions.keys():
             region = bad_regions[i]
             left = np.searchsorted(order.x, region[0])
