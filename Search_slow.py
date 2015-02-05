@@ -58,13 +58,14 @@ if __name__ == '__main__':
         print fname, vsini
     
     GenericSearch.slow_companion_search(fileList, prim_vsini,
-	                                extensions=True,
-					resolution=60000.0,
+                                        hdf5_file='/media/ExtraSpace/PhoenixGrid/HRS_Grid.hdf5'
+                                        extensions=True,
+					resolution=None,
 					trimsize=trimsize,
 					modeldir=modeldir,
 					badregions=badregions,
 					metal_values=(0.0,),
-					vsini_values=(1,),
+					vsini_values=(1, 5.0, 10.0, 15.0),
 					#Tvalues=range(4100, 6900, 100),
 					observatory='McDonald',
 					debug=False,

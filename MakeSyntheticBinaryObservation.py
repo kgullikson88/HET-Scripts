@@ -177,7 +177,7 @@ def classify_file(filename, astroquery=True):
 
 
 if __name__ == '__main__':
-    scale = False
+    scale = True
     early, late = parse_input(sys.argv[1:])
 
     # Add each late file to all of the early-type files

@@ -17,7 +17,7 @@ bad_regions_wave = {436: [438, 9e9],
                     459.2: [1, 9e9],
                     465.4: [1, 9e9],
                     471.8: [1, 9e9]}
-bad_regions_wave = {}
+#bad_regions_wave = {}
 
 
 def read_orders(fname, blazefile=None):

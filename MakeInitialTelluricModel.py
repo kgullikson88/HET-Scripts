@@ -122,7 +122,10 @@ if __name__ == "__main__":
                 P.append(float(segments[5]))
                 idx += 1
 
-        angle = float(header["ZD"])
+        try:
+            angle = float(header["ZD"])
+        except KeyError:
+            angle = 40.0
         resolution = 60000.0
         humidity = 50.0
         T_fahrenheit = 50.0
