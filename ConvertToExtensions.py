@@ -4,6 +4,7 @@ import FittingUtilities
 
 from astropy.io import fits as pyfits
 import numpy as np
+
 import HelperFunctions
 
 
@@ -108,9 +109,10 @@ if __name__ == "__main__":
             header = pyfits.getheader(fname)
             try:
                 blazefile = "%s.fits" % header['BLAZE']
+                if not os.path.isfile(blazefile):
+                    blazefile = [f for f in os.listdir('./') if 'BLAZE' in f][0]
             except KeyError:
-                allfiles = os.listdir("./")
-                blazefile = [f for f in allfiles if "BLAZE" in f][0]
+                blazefile = [f for f in os.listdir("./") if "BLAZE" in f][0]
         else:
             blazefile = None
         orders = read_orders(fname, blazefile)
