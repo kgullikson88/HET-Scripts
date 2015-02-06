@@ -5,14 +5,16 @@ import FittingUtilities
 import numpy as np
 from astropy.io import fits as pyfits
 import TelluricFitter
+
 import HelperFunctions
 
 
 homedir = os.environ["HOME"]
 weather_file = homedir + "/School/Research/Useful_Datafiles/Weather.dat"
 
-badregions = [[588.98, 589.037],  # Na D line 1
-              [589.567, 589.632],  # Na D line 2
+badregions = [[588., 590],  # Na D line
+              # [589.567, 589.632],  # Na D line 2
+              [655, 658],  #H-alpha line
               [627.4, 629.0],  #O2 band
               [686.4, 690.7]]  # O2 band
 
