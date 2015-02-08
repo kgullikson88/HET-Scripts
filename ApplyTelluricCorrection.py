@@ -1,17 +1,15 @@
 import sys
-from scipy.interpolate import InterpolatedUnivariateSpline as spline
-from scipy.optimize import leastsq
 import os
 import warnings
+import FittingUtilities
 
+from scipy.interpolate import InterpolatedUnivariateSpline as spline
+from scipy.optimize import leastsq
 from astropy.io import fits as pyfits
 import matplotlib.pyplot as plt
 import DataStructures
-import FittingUtilities
 import numpy as np
-import MakeModel
 import TelluricFitter
-
 import HelperFunctions
 
 
@@ -36,7 +34,7 @@ def ReadCorrectedFile(fname, yaxis="model"):
 
 
 # def FixWavelength(data, model, fitorder=3):
-#  modelfcn = tf.FitWavelength(data, model, fitorder=fitorder)
+# modelfcn = tf.FitWavelength(data, model, fitorder=fitorder)
 #  return modelfcn
 
 def FitGaussian(data):
@@ -216,7 +214,6 @@ def Correct_HET(original, corrected, offset=None, plot=True, get_primary=False):
     return original_orders
 
 
-
 def Correct(original, corrected, offset=None, get_primary=False, interpolate=True, adjust=True, plot=False):
     # Read in the data and model
     original_orders = HelperFunctions.ReadFits(original, extensions=True, x="wavelength", y="flux", errors="error",
@@ -242,7 +239,7 @@ def Correct(original, corrected, offset=None, get_primary=False, interpolate=Tru
         data.cont = FittingUtilities.Continuum(data.x, data.y)
         try:
             model = corrected_orders[i]
-	    header = corrected_headers[i]
+            header = corrected_headers[i]
             if get_primary:
                 primary = primary_orders[i]
             if i == 0:
@@ -292,7 +289,7 @@ def Correct(original, corrected, offset=None, get_primary=False, interpolate=Tru
             else:
                 scale = 1.0
             print i, scale
-            model.y = model.y ** (1.0/scale)
+            model.y = model.y ** (1.0 / scale)
 
         #plt.plot(data.x, data.y / model.y)
         data.y /= model.y
@@ -305,10 +302,9 @@ def Correct(original, corrected, offset=None, get_primary=False, interpolate=Tru
     return original_orders
 
 
-
 def main1():
     primary = True
-    plot = False
+    plot = True
     if len(sys.argv) > 2:
         original = sys.argv[1]
         corrected = sys.argv[2]
