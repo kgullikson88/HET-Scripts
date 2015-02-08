@@ -1,14 +1,12 @@
 import sys
-from scipy.interpolate import InterpolatedUnivariateSpline as interp
 from collections import defaultdict
 import os
+import FittingUtilities
 
-import DataStructures
+from scipy.interpolate import InterpolatedUnivariateSpline as interp
 import numpy as np
 import pylab
 from astropy.io import fits as pyfits
-import FittingUtilities
-
 import HelperFunctions
 
 
@@ -156,7 +154,7 @@ if __name__ == "__main__":
             key = "{}+{}".format(starname1, starname2)
             fileDict[key].append(fname)
         for star in fileDict.keys():
-            Add(fileDict[star], outfilename="%s_MS_scale.fits" % star, plot=plot)
+            Add(fileDict[star], outfilename="%s_bright.fits" % star, plot=plot)
     else:
         allfiles = [f for f in os.listdir("./") if f.startswith("KG") and "-0" in f and "telluric" in f]
         fileDict = defaultdict(list)
