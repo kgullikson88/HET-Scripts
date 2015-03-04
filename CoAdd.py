@@ -7,6 +7,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline as interp
 import numpy as np
 import pylab
 from astropy.io import fits as pyfits
+
 import HelperFunctions
 
 
@@ -48,7 +49,7 @@ def MedianAdd(fileList, outfilename="Total.fits"):
             pylab.plot(x, total[j])
         flux = np.median(total, axis=0) * norm
         cont = FittingUtilities.Continuum(x, flux, fitorder=3, lowreject=1.5, highreject=5)
-        #Set up data structures for OutputFitsFile
+        # Set up data structures for OutputFitsFile
         columns = {"wavelength": x,
                    "flux": flux,
                    "continuum": cont,
@@ -63,7 +64,7 @@ def MedianAdd(fileList, outfilename="Total.fits"):
     pylab.show()
     HelperFunctions.OutputFitsFileExtensions(column_list, fileList[0], outfilename, mode="new")
 
-    #Add the files used to the primary header of the new file
+    # Add the files used to the primary header of the new file
     hdulist = pyfits.open(outfilename, mode='update')
     header = hdulist[0].header
     for i in range(len(fileList)):
@@ -99,7 +100,7 @@ def Add(fileList, outfilename=None, plot=True):
         total.err = total.err ** 2
         for observation in all_data[1:]:
             observation[i].y[observation[i].y < 0.0] = 0.0
-            #flux = interp(observation[i].x, observation[i].y)
+            # flux = interp(observation[i].x, observation[i].y)
             #error = interp(observation[i].x, observation[i].err**2, k=1)
             rebinned = FittingUtilities.RebinData(observation[i], total.x)
             #total.y += flux(total.x)
@@ -110,7 +111,7 @@ def Add(fileList, outfilename=None, plot=True):
         total.err = np.sqrt(total.err)
         total.cont = FittingUtilities.Continuum(total.x, total.y, fitorder=3, lowreject=1.5, highreject=5)
 
-        #Set up data structures for OutputFitsFile
+        # Set up data structures for OutputFitsFile
         columns = {"wavelength": total.x,
                    "flux": total.y,
                    "continuum": total.cont,
@@ -125,7 +126,7 @@ def Add(fileList, outfilename=None, plot=True):
     print "Outputting to %s" % outfilename
     HelperFunctions.OutputFitsFileExtensions(column_list, fileList[0], outfilename, mode="new")
 
-    #Add the files used to the primary header of the new file
+    # Add the files used to the primary header of the new file
     hdulist = pyfits.open(outfilename, mode='update')
     header = hdulist[0].header
     for i in range(len(fileList)):
@@ -156,7 +157,7 @@ if __name__ == "__main__":
         for star in fileDict.keys():
             Add(fileDict[star], outfilename="%s_bright.fits" % star, plot=plot)
     else:
-        allfiles = [f for f in os.listdir("./") if f.startswith("KG") and "-0" in f and "telluric" in f]
+        allfiles = [f for f in os.listdir("./") if f.startswith("HRS") and "-0" in f and "telluric" in f]
         fileDict = defaultdict(list)
         for fname in allfiles:
             header = pyfits.getheader(fname)

@@ -10,11 +10,10 @@ if __name__ == "__main__":
             file_list.append(arg)
 
     for fname in file_list:
-        """
         hdulist = fits.open(fname, mode='update')
-        object = hdulist[0].header['object']
-        new_object = object.split()[0].replace("_", " ")
-        print object, new_object
+        object_name = hdulist[0].header['object']
+        new_object = object_name.split()[0].replace("_", " ")
+        print object_name, new_object
         hdulist[0].header['object'] = new_object
         hdulist.flush()
         hdulist.close()
@@ -26,3 +25,4 @@ if __name__ == "__main__":
         print(fname, real_object)
         hdulist.flush()
         hdulist.close()
+        """
