@@ -14,7 +14,7 @@ badregions = [[567.5, 575.5],
               # [655, 657],  # H alpha
               # [485, 487],  #H beta
               # [433, 435],  #H gamma
-              #[409, 411],  #H delta
+              # [409, 411],  #H delta
               #[396, 398],  #H epsilon
               #[388, 390],  #H zeta
 ]
@@ -48,7 +48,8 @@ if __name__ == '__main__':
                                         modeldir=modeldir,
                                         badregions=badregions,
                                         metal_values=(0.0, -0.5, 0.5),
-                                        vsini_values=(1, 5.0, 10.0, 20.0, 30.0),  # Tvalues=range(4100, 6900, 100),
+                                        vsini_values=(1, 5.0, 10.0, 20.0, 30.0),
+                                        Tvalues=range(3000, 9000, 100),
                                         observatory='McDonald',
                                         debug=False,
                                         vbary_correct=True,
