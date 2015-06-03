@@ -54,7 +54,7 @@ if __name__ == '__main__':
                                         Tvalues=range(3000, 9000, 100),
                                         observatory='McDonald',
                                         debug=False,
-                                        vbary_correct=False,
+                                        vbary_correct=True,
                                         addmode='simple',
                                         output_mode='hdf5')
 
