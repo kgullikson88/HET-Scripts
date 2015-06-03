@@ -23,8 +23,10 @@ trimsize = 10
 
 if "darwin" in sys.platform:
     modeldir = "/Volumes/DATADRIVE/Stellar_Models/PHOENIX/Stellar/Vband/"
+    hdf5_filename = '/Volumes/DATADRIVE/PhoenixGrid/HRS_Grid.hdf5'
 elif "linux" in sys.platform:
     modeldir = "/media/FreeAgent_Drive/SyntheticSpectra/Sorted/Stellar/Vband/"
+    hdf5_filename = '/media/ExtraSpace/PhoenixGrid/HRS_Grid.hdf5'
 else:
     modeldir = raw_input("sys.platform not recognized. Please enter model directory below: ")
     if not modeldir.endswith("/"):
@@ -41,7 +43,7 @@ if __name__ == '__main__':
     prim_vsini = StarData.get_vsini(fileList)
 
     GenericSearch.slow_companion_search(fileList, prim_vsini,
-                                        hdf5_file='/media/ExtraSpace/PhoenixGrid/HRS_Grid.hdf5',
+                                        hdf5_file=hdf5_filename,
                                         extensions=True,
                                         resolution=None,
                                         trimsize=trimsize,
@@ -52,7 +54,7 @@ if __name__ == '__main__':
                                         Tvalues=range(3000, 9000, 100),
                                         observatory='McDonald',
                                         debug=False,
-                                        vbary_correct=True,
+                                        vbary_correct=False,
                                         addmode='simple',
                                         output_mode='hdf5')
 
