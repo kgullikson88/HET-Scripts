@@ -1,9 +1,9 @@
 import sys
+import FittingUtilities
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-import FitsUtils
 import HelperFunctions
 
 
@@ -149,7 +149,13 @@ def Automatic():
                 [590.7, 593],
                 [703.4, 707.7],
     ]
-    trimsize = 10
+    interp_waves = {20: [[480.9, 481.7],
+                         [482.0, 483.0],
+    ],
+                    61: [[752.5, 756]],
+    }
+    left_trimsize = 10
+    right_trimsize = 500
     for fname in sys.argv[1:]:
         orders = HelperFunctions.ReadExtensionFits(fname)
 
@@ -160,7 +166,7 @@ def Automatic():
         # Trim the bad parts of the spectrum
         column_list = []
         for i, order in enumerate(orders):
-            order = order[trimsize:-trimsize]
+            order = order[left_trimsize:-right_trimsize]
             for badsection in badwaves:
                 left = np.searchsorted(order.x, badsection[0])
                 right = np.searchsorted(order.x, badsection[1])
@@ -169,6 +175,20 @@ def Automatic():
                 order.cont = np.delete(order.cont, np.arange(left, right))
                 order.err = np.delete(order.err, np.arange(left, right))
 
+            order.cont = FittingUtilities.Continuum(order.x, order.y, fitorder=3, lowreject=2, highreject=5)
+            if i in interp_waves.keys():
+                for trimsection in interp_waves[i]:
+                    left = np.searchsorted(order.x, trimsection[0])
+                    right = np.searchsorted(order.x, trimsection[1])
+                    if right <= left:
+                        continue
+                    idx = (order.x < trimsection[0]) | (order.x > trimsection[1])
+                    cont_pars = np.polyfit(order.x[idx], order.y[idx], 3)
+                    order.y[left:right] = np.poly1d(cont_pars)(order.x[left:right])
+                    order.cont = FittingUtilities.Continuum(order.x, order.y, fitorder=3, lowreject=2, highreject=5)
+                    order.y[left:right] = order.cont[left:right]
+                    order.err[left:right] *= 100
+
             columns = {"wavelength": order.x,
                        "flux": order.y,
                        "continuum": order.cont,
@@ -176,7 +196,7 @@ def Automatic():
             column_list.append(columns)
 
 
-        #Output:
+        # Output:
         if "-" in fname:
             n = int(fname.split("-")[-1].split(".fits")[0])
             n = n + 1

@@ -17,6 +17,18 @@ logging.basicConfig(level='INFO')
 
 MS = SpectralTypeRelations.MainSequence()
 
+if "darwin" in sys.platform:
+    modeldir = "/Volumes/DATADRIVE/Stellar_Models/PHOENIX/Stellar/Vband/"
+    hdf5_filename = '/Volumes/DATADRIVE/PhoenixGrid/HRS_Grid.hdf5'
+elif "linux" in sys.platform:
+    modeldir = "/media/FreeAgent_Drive/SyntheticSpectra/Sorted/Stellar/Vband/"
+    hdf5_filename = '/media/ExtraSpace/PhoenixGrid/HRS_Grid.hdf5'
+else:
+    modeldir = raw_input("sys.platform not recognized. Please enter model directory below: ")
+
+if not modeldir.endswith("/"):
+    modeldir = modeldir + "/"
+
 
 def check_sensitivity():
     fileList = []
@@ -30,14 +42,14 @@ def check_sensitivity():
     prim_vsini = StarData.get_vsini(fileList)
 
     Sensitivity.Analyze(fileList, prim_vsini,
-                        hdf5_file='/media/ExtraSpace/PhoenixGrid/HRS_Grid.hdf5',
+                        hdf5_file=hdf5_filename,
                         extensions=True,
                         resolution=None,
                         trimsize=trimsize,
                         badregions=badregions, interp_regions=interp_regions,
                         metal_values=(0.0,),
                         vsini_values=(0, 10, 20, 30, 40, 50),
-                        Tvalues=range(3000, 7000, 100),
+                        Tvalues=range(3500, 7000, 100),
                         debug=False,
                         addmode='simple',
                         output_mode='hdf5')

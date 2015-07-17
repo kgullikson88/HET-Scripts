@@ -4,7 +4,8 @@ import GenericSearch
 import StarData
 
 # Define regions contaminated by telluric residuals or other defects. We will not use those regions in the cross-correlation
-badregions = [[567.5, 575.5],
+badregions = [[0, 450.],
+              [567.5, 575.5],
               [588.5, 598.5],
               [627, 632],
               [647, 655],
@@ -15,7 +16,7 @@ badregions = [[567.5, 575.5],
               # [485, 487],  #H beta
               # [433, 435],  #H gamma
               # [409, 411],  #H delta
-              #[396, 398],  #H epsilon
+              # [396, 398],  #H epsilon
               #[388, 390],  #H zeta
 ]
 interp_regions = []
@@ -51,7 +52,10 @@ if __name__ == '__main__':
                                         badregions=badregions,
                                         metal_values=(0.0, -0.5, 0.5),
                                         vsini_values=(1, 5.0, 10.0, 20.0, 30.0),
-                                        Tvalues=range(3000, 9000, 100),
+                                        Tvalues=range(9000, 12000, 100),
+                                        # Tvalues=[6000],
+                                        #metal_values=[0],
+                                        #vsini_values=[10],
                                         observatory='McDonald',
                                         debug=False,
                                         vbary_correct=True,
