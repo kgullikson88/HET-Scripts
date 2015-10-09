@@ -27,8 +27,8 @@ logger.setLevel(logging.INFO)
 
 # Get the HDF5 filename. Might want to change this eventually.
 #HDF5_FILENAME = '/Volumes/DATADRIVE/Kurucz_Grid/TS23_grid_full.hdf5'
-HDF5_FILENAME = '/Users/kevingullikson/StellarLibrary/Kurucz_Grid/TS23_grid_full.hdf5'
-PAR_LOGFILE = 'TS23-Scripts/Flatten.log'
+HDF5_FILENAME = '/Users/kevingullikson/StellarLibrary/Kurucz_Grid/HRS_grid_air.hdf5'
+PAR_LOGFILE = 'Flatten.log'
 
 
 def fit(filename, model_library, teff, logg, feh=0.0, output_basename='RVFitter'):
@@ -54,7 +54,7 @@ def fit(filename, model_library, teff, logg, feh=0.0, output_basename='RVFitter'
     return fitter
 
 if __name__ == '__main__':
-    file_list = glob.glob('201*/*flattened.fits')
+    file_list = glob.glob('201*/*renormalized.fits')
     fitted_df = pd.read_csv(PAR_LOGFILE, header=None, names=['fname', 'star', 'date', 'teff', 'logg', 'rv'])
     print(fitted_df.tail())
     
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         logging.info('Fitting RV for {}'.format(filename))
 
         # Find this filename in the fitted dataframe (generated while flattening the spectra)
-        original_fname = filename.split('_flattened.fits')[0] + '.fits'
+        original_fname = filename.split('_renormalized.fits')[0] + '.fits'
         subset = fitted_df.loc[fitted_df.fname == original_fname]
         teff = float(subset.teff)
         logg = float(subset.logg)
