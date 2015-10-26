@@ -33,7 +33,8 @@ PAR_LOGFILE = 'Flatten.log'
 
 def fit(filename, model_library, teff, logg, feh=0.0, output_basename='RVFitter'):
     # Read in the (assumed flattened) spectra
-    orders = HelperFunctions.ReadExtensionFits(filename)
+    all_orders = HelperFunctions.ReadExtensionFits(filename)
+    orders = [o.copy() for o in all_orders if o.x[0] < 475 or o.x[-1] > 495]
 
     # Set up the fitter
     fitter = Fitters.RVFitter(orders, model_library=model_library,
@@ -68,4 +69,4 @@ if __name__ == '__main__':
         logg = float(subset.logg)
         logging.info('Teff = {}\nlogg = {}'.format(teff, logg))
 
-        fitter = fit(filename, HDF5_FILENAME, teff=teff, logg=logg, output_basename='RVFitter_flattened')
+        fitter = fit(filename, HDF5_FILENAME, teff=teff, logg=logg, output_basename='RVFitter_nobalmer')
