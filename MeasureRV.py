@@ -16,6 +16,7 @@ import HelperFunctions
 import Fitters
 
 
+
 # Set up plotting
 sns.set_style('white')
 sns.set_style('ticks')
@@ -26,8 +27,9 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # Get the HDF5 filename. Might want to change this eventually.
-#HDF5_FILENAME = '/Volumes/DATADRIVE/Kurucz_Grid/TS23_grid_full.hdf5'
+# HDF5_FILENAME = '/Volumes/DATADRIVE/Kurucz_Grid/TS23_grid_full.hdf5'
 HDF5_FILENAME = '/Users/kevingullikson/StellarLibrary/Kurucz_Grid/HRS_grid_air.hdf5'
+HDF5_FILENAME = '/Volumes/DATADRIVE/Kurucz_Grid/HRS_grid_air.hdf5'
 PAR_LOGFILE = 'Flatten.log'
 
 
@@ -54,11 +56,12 @@ def fit(filename, model_library, teff, logg, feh=0.0, output_basename='RVFitter'
 
     return fitter
 
+
 if __name__ == '__main__':
     file_list = glob.glob('201*/*renormalized.fits')
     fitted_df = pd.read_csv(PAR_LOGFILE, header=None, names=['fname', 'star', 'date', 'teff', 'logg', 'rv'])
     print(fitted_df.tail())
-    
+
     for filename in file_list:
         logging.info('Fitting RV for {}'.format(filename))
 
