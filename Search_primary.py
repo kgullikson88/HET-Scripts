@@ -1,7 +1,6 @@
 import sys
 
 import GenericSearch
-import StarData
 
 # Define regions contaminated by telluric residuals or other defects. We will not use those regions in the cross-correlation
 badregions = [[475, 495]]
@@ -10,11 +9,11 @@ trimsize = 10
 
 if "darwin" in sys.platform:
     modeldir = "/Volumes/DATADRIVE/Stellar_Models/PHOENIX/Stellar/Vband/"
-    hdf5_filename = '/Users/kevingullikson/StellarLibrary/Kurucz_Grid/CHIRON_grid_air.hdf5'
+    hdf5_filename = '/Users/kevingullikson/StellarLibrary/Kurucz_Grid/HRS_grid_air.hdf5'
     #hdf5_filename = '/Volumes/DATADRIVE/Kurucz_Grid/CHIRON_grid_air.hdf5'
 elif "linux" in sys.platform:
     modeldir = "/media/FreeAgent_Drive/SyntheticSpectra/Sorted/Stellar/Vband/"
-    hdf5_filename = '/media/ExtraSpace/Kurucz_FullGrid/CHIRON_grid_air.hdf5'
+    hdf5_filename = '/media/ExtraSpace/Kurucz_FullGrid/HRS_grid_air.hdf5'
 else:
     modeldir = raw_input("sys.platform not recognized. Please enter model directory below: ")
     if not modeldir.endswith("/"):
@@ -39,10 +38,10 @@ if __name__ == '__main__':
                                         modeldir=modeldir,
                                         badregions=badregions,
                                         metal_values=(0.0),
-					logg_values=(3.5, 4.0, 4.5,),
+                                        logg_values=(3.5, 4.0, 4.5,),
                                         vsini_values=(10, 40, 80, 150, 250),
                                         Tvalues=range(7000, 20000, 1000),
-                                        observatory='CTIO',
+                                        observatory='McDonald',
                                         debug=False,
                                         reject_outliers=False,
                                         vbary_correct=False,
