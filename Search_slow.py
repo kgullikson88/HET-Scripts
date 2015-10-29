@@ -56,6 +56,6 @@ if __name__ == '__main__':
                                         observatory='McDonald',
                                         debug=False,
                                         vbary_correct=True,
-                                        addmode='simple',
+                                        addmode='all',
                                         output_mode='hdf5')
 
