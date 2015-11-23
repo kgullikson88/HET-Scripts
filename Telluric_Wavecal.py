@@ -20,9 +20,10 @@ import telfit
 
 
 
+
 # Make the speed of light a constant
 C_LIGHT = constants.c.cgs.to(u.km/u.s).value
-ARCHIVE_DIR = '/media/FreeAgent_Drive_/data/McDonaldData/'
+ARCHIVE_DIR = '/media/FreeAgent_Drive_/data/HET_data/'
 
 class VelocityFitter(object):
     def __init__(self, filename, tell_orders=(690., 700., 715., 725., 735.), telluric_model=None):
